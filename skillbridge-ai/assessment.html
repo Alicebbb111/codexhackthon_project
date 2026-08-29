@@ -7,6 +7,34 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* เฉพาะหน้านี้: การ์ดอาชีพ, ผลหมวด, feedback ถูก/ผิด */
+    .career-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+    .career-card {
+      background: var(--bg-card); border: 1px solid var(--line); border-radius: 14px;
+      padding: 16px; cursor: pointer; text-align: center; font-family: inherit; color: var(--text);
+    }
+    .career-card:hover { border-color: var(--lime); }
+    .career-card.selected { border-color: var(--lime); background: rgba(166,255,77,.1); box-shadow: var(--glow-lime); }
+    .career-card .ic { font-size: 1.8rem; display: block; margin-bottom: 6px; }
+
+    .feedback { margin-left: 62px; margin-bottom: 16px; padding: 12px 16px; border-radius: 12px; font-size: .95rem; }
+    .feedback.correct { background: rgba(77,232,176,.12); border: 1px solid rgba(77,232,176,.4); color: var(--mint); }
+    .feedback.wrong { background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.35); color: #ff9d9d; }
+
+    .cat-chip {
+      display: inline-block; font-size: .74rem; font-weight: 700; padding: 3px 12px;
+      border-radius: 999px; margin-bottom: 8px; letter-spacing: .3px;
+    }
+    .cat-chip.technical { background: rgba(139,123,255,.15); color: #b3a8ff; border: 1px solid rgba(139,123,255,.4); }
+    .cat-chip.soft { background: rgba(77,232,176,.12); color: var(--mint); border: 1px solid rgba(77,232,176,.35); }
+    .cat-chip.career { background: rgba(166,255,77,.12); color: var(--lime); border: 1px solid rgba(166,255,77,.35); }
+
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 18px; }
+    .res-card { text-align: center; padding: 22px 16px; }
+    .res-card .pct { font-size: 2.1rem; font-weight: 800; color: var(--lime); }
+    .res-card .name { color: var(--text-dim); font-size: .9rem; margin-top: 4px; }
+  </style>
 </head>
 <body>
   <header class="navbar">
@@ -24,7 +52,6 @@
   </header>
 
   <main>
-    <!-- แถบความคืบหน้า: เอเลี่ยนเดินข้ามสะพาน -->
     <div class="progress-bridge" id="bridge" style="visibility: hidden;">
       <div class="walker" id="walker"></div>
       <div class="track"></div>
@@ -32,83 +59,187 @@
 
     <div class="chat-box" id="chatBox"></div>
     <div class="choices" id="choicesBox"></div>
+    <div id="extraBox"></div>
   </main>
 
-  <script src="js/mockData.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/mockData.js?v=2"></script>
+  <script src="js/api.js?v=2"></script>
+  <script src="js/main.js?v=2"></script>
   <script>
     const quiz = window.MOCK_DATA.quiz;
-    const answers = [];
-    let step = 0; // 0 = ทักทาย, 1 = โหมดการเรียนรู้, 2.. = quiz
+    const careers = window.MOCK_DATA.careers;
+    const profiles = window.MOCK_DATA.careerProfiles;
 
+    let step = 0;              // 0 = ทักทาย, 1 = ฟอร์มเลือกอาชีพ, 2+ = ควิซ
+    let careerChoice = null;   // อาชีพที่ผู้เรียนเลือก
+    const answers = [];        // [{ category, index, correct|null, score }]
     const chatBox = document.getElementById("chatBox");
     const choicesBox = document.getElementById("choicesBox");
+    const extraBox = document.getElementById("extraBox");
     const bridge = document.getElementById("bridge");
     const walker = document.getElementById("walker");
 
-    function addBubble(text, isUser = false) {
+    function addBubble(html, isUser = false) {
       chatBox.insertAdjacentHTML("beforeend", `
         <div class="bubble ${isUser ? "user" : ""}">
           ${isUser ? "" : `<span class="avatar">${mascotSVG(46)}</span>`}
-          <div class="msg">${text}</div>
+          <div class="msg">${html}</div>
         </div>`);
       chatBox.scrollTop = chatBox.scrollHeight;
     }
+
+    // event delegation — ผูก listener ที่คอนเทนเนอร์ครั้งเดียว ทำงานกับปุ่มที่ถูกสร้างใหม่ทุกรอบ
+    choicesBox.addEventListener("click", (e) => {
+      const b = e.target.closest(".choice");
+      if (!b || b.disabled) return;
+      [...choicesBox.children].forEach((c) => (c.disabled = true));
+      onAnswer(Number(b.dataset.i));
+    });
 
     function setChoices(items) {
       choicesBox.innerHTML = "";
       items.forEach((label, i) => {
         const b = document.createElement("button");
         b.className = "choice";
+        b.type = "button";
         b.textContent = label;
-        b.onclick = () => pick(i, b);
+        b.dataset.i = i;
         choicesBox.appendChild(b);
       });
     }
 
-    function pick(i, btn) {
-      [...choicesBox.children].forEach((c) => (c.disabled = true));
-      btn.classList.add("selected");
-      addBubble(btn.textContent, true);
-      nextStep(i);
-    }
-
     function moveWalker() {
-      const done = Math.max(0, answers.length);
+      const done = answers.length;
       walker.style.left = `calc(${(done / quiz.length) * 100}% - ${done === quiz.length ? 20 : 0}px)`;
     }
 
-    function nextStep(answerIndex) {
-      // บันทึกคำตอบของ quiz
-      if (step >= 2) answers.push(answerIndex);
-      step++;
-
-      if (step === 1) {
-        addBubble("น่ารักมาก! แล้วช่วงนี้เราสนุกกับการเรียนแบบไหนเอ่ย? 😊");
-        setChoices(["ดูวิดีโอ 🎬", "ดูรูปภาพ/อินโฟกราฟิก 🖼️", "อ่านหนังสือ 📖", "เล่นเกม 🎮"]);
-      } else if (step >= 2 && step < 2 + quiz.length) {
-        bridge.style.visibility = "visible";
-        const qi = step - 2;
-        moveWalker();
-        addBubble(`ข้อที่ ${qi + 1}/${quiz.length} — ${quiz[qi].q}`);
-        setChoices(quiz[qi].choices);
+    function onAnswer(index) {
+      if (step === 0) {
+        addBubble(["พร้อมแล้ว! ไปกันเลย 🚀", "ขอเริ่มเบาๆ ก่อน 😌"][index], true);
+        askCareer();
+      } else if (step === 1) {
+        step = 2; // จบเฟสเลือกอาชีพ เริ่มเฟสควิซ
+        careerChoice = careers[index].id;
+        addBubble(careers[index].icon + " " + careers[index].name, true);
+        extraBox.innerHTML = ""; // ลบการ์ดเลือกอาชีพออกเมื่อเริ่มควิซ
+        addBubble(`จดจำไว้แล้ว! เราจะใช้เป้าหมายนี้ช่วยวิเคราะห์ว่าเราตรงกับอาชีพนี้แค่ไหน 😊<br>เริ่มข้อแรกเลย — ข้อที่มีเฉลยจะบอกผลถูก/ผิดทันทีนะ`);
+        askQuestion(0);
       } else {
-        moveWalker();
-        addBubble("เก่งมาก! กำลังสร้างพาสปอร์ตทักษะให้… 🛸✨");
-        choicesBox.innerHTML = "";
-        finish();
+        const item = quiz[step - 2];
+        const isObj = typeof item.correctIndex === "number";
+        const score = isObj ? (index === item.correctIndex ? 100 : 0) : Math.round(100 - index * (100 / (item.choices.length - 1)));
+        answers.push({ category: item.category, index, correct: isObj ? index === item.correctIndex : null, score });
+
+        // แสดงคำตอบ + เฉลยทันที (เฉพาะข้อที่มีคำตอบถูก)
+        addBubble(item.choices[index], true);
+        if (isObj) {
+          if (index === item.correctIndex) {
+            addBubble(`✅ <b>ถูกต้อง!</b> ได้ <b>100</b> คะแนน — เก่งมาก!`);
+          } else {
+            addBubble(`❌ <b>ยังไม่ถูก</b> (ได้ 0 คะแนน) — ข้อที่ถูกคือ "<b>${item.choices[item.correctIndex]}</b>" ไม่เป็นไรนะ เรียนกันไปเรื่อยๆ 🌱`);
+          }
+        }
+        const next = step - 2 + 1;
+        step++;
+        if (next < quiz.length) askQuestion(next);
+        else finish();
       }
     }
 
+    function askCareer() {
+      step = 1;
+      addBubble("ก่อนเริ่ม ขอถามอีกเรื่อง — <b>เราอยากเป็นอะไร หรือสนใจ/ถนัดแบบไหน?</b> เลือกจากการ์ดด้านล่างได้เลย");
+      extraBox.innerHTML = "";
+      const grid = document.createElement("div");
+      grid.className = "career-grid";
+      grid.addEventListener("click", (e) => {
+        const b = e.target.closest(".career-card");
+        if (!b || grid.querySelector(".selected")) return;
+        grid.querySelectorAll(".career-card").forEach((x) => x.classList.remove("selected"));
+        b.classList.add("selected");
+        onAnswer(Number(b.dataset.i));
+      });
+      careers.forEach((c, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "career-card";
+        b.dataset.i = i;
+        b.innerHTML = `<span class="ic">${c.icon}</span>${c.name}`;
+        grid.appendChild(b);
+      });
+      extraBox.appendChild(grid);
+      extraBox.scrollIntoView({ behavior: "smooth" });
+    }
+
+    function askQuestion(i) {
+      bridge.style.visibility = "visible";
+      moveWalker();
+      const item = quiz[i];
+      addBubble(`<span class="cat-chip ${item.category}">${item.label}</span><br>ข้อที่ ${i + 1}/${quiz.length} — ${item.q}`);
+      setChoices(item.choices);
+    }
+
+    function categoryScore(cat) {
+      const list = answers.filter(a => a.category === cat);
+      if (!list.length) return 0;
+      return Math.round(list.reduce((s, a) => s + a.score, 0) / list.length);
+    }
+
+    function buildResult() {
+      const tech = categoryScore("technical");
+      const soft = categoryScore("soft");
+      const career = categoryScore("career");
+      const prof = profiles[careerChoice] || profiles.unsure;
+      const match = Math.round(tech * prof.weights.technical + soft * prof.weights.soft + career * prof.weights.career);
+      const missing = [];
+      if (tech < 70) missing.push("พื้นฐาน Excel / SQL");
+      if (career < 70) missing.push("ทักษะการเรียนรู้ด้วยตนเอง");
+      if (soft < 70) missing.push("ทักษะการทำงานร่วมกับผู้อื่น");
+      if (!missing.length) missing.push("ยังไม่มี — เก็บรายละเอียดเพิ่มจากการเรียนจริงได้เลย");
+      return {
+        goalCareer: prof.name,
+        careerChoice,
+        categoryScores: { technical: tech, soft, career },
+        careerReadiness: Math.round((tech + soft + career) / 3),
+        career: prof.name,
+        careerMatch: match,
+        answers,
+        missingSkills: missing,
+        jobMatch: "ตำแหน่งงานที่ตรงกับทักษะ: จะอัปเดตจากฐานข้อมูลตลาดงานจริงเร็วๆ นี้",
+      };
+    }
+
     async function finish() {
+      moveWalker();
+      const r = buildResult();
+
+      // สรุปคะแนนแยก 3 หมวด + อาชีพแนะนำ
+      addBubble(`จบแล้ว! นี่คือผลวิเคราะห์ของเรา 🛸✨
+        <div class="results-grid">
+          <div class="card res-card"><div class="pct">${r.categoryScores.technical}%</div><div class="name">💻 ทักษะเทคนิค</div></div>
+          <div class="card res-card"><div class="pct">${r.categoryScores.soft}%</div><div class="name">🤝 ทักษะด้านคน</div></div>
+          <div class="card res-card"><div class="pct">${r.categoryScores.career}%</div><div class="name">🎯 ความพร้อมสู่อาชีพ</div></div>
+        </div>
+        <div class="card glow" style="margin-top:14px; text-align:center;">
+          <div style="color:var(--text-dim); font-size:.85rem;">อาชีพที่ตรงกับเราตอนนี้</div>
+          <div style="font-weight:800; font-size:1.1rem; margin:4px 0;">${r.career}</div>
+          <div style="color:var(--lime); font-weight:700;">ตรงกัน ${r.careerMatch}%</div>
+        </div>`);
+      choicesBox.innerHTML = "";
+      extraBox.innerHTML = "";
+
+      // เก็บผลไว้ให้หน้าพาสปอร์ต/แดชบอร์ดใช้
+      sessionStorage.setItem("sbResult", JSON.stringify(r));
+
       try {
         // จุดเชื่อม MySQL — บันทึกคำตอบ (ตอนนี้ยังเป็น mock)
-        await window.SkillBridgeAPI.saveAssessment({ answers });
-        // จุดเชื่อม AI — เรียกโมเดลประเมิน (ตอนนี้ยังเป็น mock)
-        await window.SkillBridgeAPI.aiPredict({ answers });
+        await window.SkillBridgeAPI.saveAssessment({ careerChoice, answers });
+        // จุดเชื่อม AI — ส่งผลให้โมเดลวิเคราะห์ต่อ (ตอนนี้ยังเป็น mock)
+        await window.SkillBridgeAPI.aiPredict({ careerChoice, answers });
       } catch (e) { /* ยังไม่ต่อ backend — ข้ามไปได้ */ }
-      setTimeout(() => (location.href = "passport.html"), 900);
+
+      addBubble("ไปดูพาสปอร์ตทักษะกันเลย!");
+      setTimeout(() => (location.href = "passport.html"), 1600);
     }
 
     // โหมดใจเย็น

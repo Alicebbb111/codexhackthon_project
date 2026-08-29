@@ -91,7 +91,19 @@
   <script src="js/api.js"></script>
   <script src="js/main.js"></script>
   <script>
-    const result = window.MOCK_DATA.aiResult; // TODO: เปลี่ยนเป็นผลจาก AI จริง + ดึงจาก MySQL
+    // ใช้ผลจากแบบทดสอบจริงถ้ามี (เก็บไว้ตอนจบควิซ) ไม่งั้นใช้ตัวอย่าง
+    // TODO: เปลี่ยนเป็นผลจาก AI จริง + ดึงจาก MySQL
+    const stored = sessionStorage.getItem("sbResult");
+    const result = stored ? JSON.parse(stored) : window.MOCK_DATA.aiResult;
+
+    // ถ้าเป็นผลจากควิซจริง แสดงคะแนนรายหมวดเป็น skill bar
+    if (stored && result.categoryScores) {
+      result.technical = [{ name: "💻 ทักษะเทคนิค", score: result.categoryScores.technical }];
+      result.soft = [
+        { name: "🤝 ทักษะด้านคน", score: result.categoryScores.soft },
+        { name: "🎯 ความพร้อมสู่อาชีพ", score: result.categoryScores.career },
+      ];
+    }
 
     document.getElementById("passportMascot").innerHTML = mascotSVG(84);
     document.getElementById("ownerName").textContent = window.MOCK_DATA.userProfile.name;
@@ -116,7 +128,8 @@
     }, 300);
 
     document.getElementById("careerName").textContent = result.career;
-    document.getElementById("jobMatch").textContent = result.jobMatch;
+    document.getElementById("jobMatch").textContent =
+      (result.careerMatch != null ? `อาชีพนี้ตรงกับเรา ${result.careerMatch}% · ` : "") + result.jobMatch;
     document.getElementById("missingSkills").innerHTML = result.missingSkills
       .map((s) => `<span style="font-size:.82rem; padding:4px 12px; border-radius:999px; background:rgba(255,107,107,.12); color:#ff8f8f; border:1px solid rgba(255,107,107,.3);">${s}</span>`)
       .join("");
