@@ -3,6 +3,8 @@ const express = require("express");
 const cors = require("cors");
 
 // นำเข้าเฉพาะ Routes ส่วนอื่นๆ ที่ยังจำเป็น (ถ้ามี) แต่ย้าย auth มาไว้ที่นี่แบบเบ็ดเสร็จ
+const authRoutes = require("./routes/authRoutes");
+const { login } = require("./controllers/loginController");
 const aiRoutes = require("./routes/aiRoutes");
 const quizRoutes = require("./routes/quizRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
@@ -19,21 +21,10 @@ app.get("/health", (req, res) => res.json({ status: "ok" }));
 // ==========================================
 // รวม Auth Routes (Login / Register) ไว้ที่นี่
 // ==========================================
-app.post("/api/auth/login", (req, res) => {
-  const { username, password } = req.body;
-
-  // ตัวอย่าง Mock data สำหรับทดสอบล็อกอิน (สามารถปรับเปลี่ยนหรือเชื่อม Database ทีหลังได้)
-  if (username === "admin" && password === "1234") {
-    res.json({
-      success: true,
-      user: { username: username }
-    });
-  } else {
-    res.status(401).json({
-      error: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
-    });
-  }
-});
+// ระบบสมาชิกจริงจาก MySQL (bcrypt) — ครอบคลุมทุก account ที่สมัคร รวมถึง admin/1234
+app.use("/api/auth", authRoutes);
+app.post("/api/login", login);
+app.post("/api/register", (req, res, next) => { req.url = "/register"; authRoutes(req, res, next); });
 
 // Routes อื่นๆ ของโปรเจกต์
 app.use("/api/ai", aiRoutes);
