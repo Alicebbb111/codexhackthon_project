@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>สมัครใช้งาน — SkillBridge AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* หน้าสมัครใช้งาน — สไตล์เดียวกับหน้าล็อกอิน */
+    .login-wrap { min-height: calc(100vh - 130px); display: grid; place-items: center; }
+    .login-card { width: 100%; max-width: 420px; padding: 36px 32px; }
+    .login-card h2 { text-align: center; margin-bottom: 6px; }
+    .login-card .sub { text-align: center; color: var(--text-dim); font-size: .9rem; margin-bottom: 24px; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: .88rem; color: var(--text-dim); margin-bottom: 6px; }
+    .field input {
+      width: 100%; padding: 12px 14px; border-radius: 10px; font-family: inherit; font-size: .95rem;
+      border: 1px solid var(--line); background: var(--bg-deep); color: var(--text); outline: none;
+    }
+    .field input:focus { border-color: var(--lime); box-shadow: var(--glow-lime); }
+    .btn-submit { width: 100%; padding: 12px; font-size: 1rem; margin-top: 8px; }
+    #error-message { color: #ff8f8f; font-size: .85rem; margin-top: 12px; text-align: center; display: none; }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <a class="logo" href="index.html">🛸 SkillBridge AI</a>
+  </header>
+
+  <main class="login-wrap">
+    <div class="card glow login-card">
+      <h2>สมัครใช้งาน</h2>
+      <p class="sub">สมัครฟรี ใช้เวลาแค่ 1 นาที 🛸</p>
+
+      <!-- สมัครผ่าน Backend API (/api/register) — โครงเดียวกับหน้าล็อกอินของทีม backend -->
+      <form id="registerForm">
+        <div class="field">
+          <label for="username">ชื่อผู้ใช้</label>
+          <input type="text" id="username" required minlength="3" placeholder="ตั้งชื่อผู้ใช้ของเรา" />
+        </div>
+        <div class="field">
+          <label for="email">อีเมล</label>
+          <input type="email" id="email" required placeholder="name@example.com" />
+        </div>
+        <div class="field">
+          <label for="password">รหัสผ่าน</label>
+          <input type="password" id="password" required minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" />
+        </div>
+        <div class="field">
+          <label for="confirmPassword">ยืนยันรหัสผ่าน</label>
+          <input type="password" id="confirmPassword" required placeholder="พิมพ์รหัสผ่านเดิมอีกครั้ง" />
+        </div>
+        <button type="submit" class="btn btn-lime btn-submit">สมัครใช้งาน</button>
+      </form>
+      <div id="error-message"></div>
+
+      <p style="text-align:center; margin-top:18px; font-size:.88rem; color:var(--text-dim);">
+        มีบัญชีอยู่แล้ว? <a href="login.html" style="color:var(--lime);">เข้าสู่ระบบ</a>
+      </p>
+    </div>
+  </main>
+
+  <script src="js/main.js"></script>
+  <script>
+    document.getElementById('registerForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const errorDiv = document.getElementById('error-message');
+
+      errorDiv.style.display = 'none';
+
+      // ตรวจพื้นฐานก่อนส่ง
+      if (password !== confirmPassword) {
+        errorDiv.textContent = "รหัสผ่านสองช่องไม่ตรงกัน";
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      try {
+        // จุดเชื่อม backend — ถ้าทีม backend ยังไม่เปิด /api/register จะขึ้นข้อความแจ้งด้านล่าง
+        const response = await fetch('http://localhost:5000/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert("สมัครสำเร็จ! กรุณาเข้าสู่ระบบ 🛸");
+          window.location.href = 'login.html';
+        } else {
+          errorDiv.textContent = data.error || "สมัครไม่สำเร็จ ลองใหม่อีกครั้ง";
+          errorDiv.style.display = 'block';
+        }
+      } catch (err) {
+        errorDiv.textContent = "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ (backend ยังไม่เปิด /api/register)";
+        errorDiv.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
