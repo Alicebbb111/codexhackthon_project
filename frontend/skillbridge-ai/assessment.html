@@ -54,7 +54,6 @@
       <a href="path.html">เส้นทางการเรียน</a>
     </nav>
     <div class="nav-actions">
-      <button class="btn btn-ghost" id="calmBtn" title="โหมดใจเย็น">🧘 โหมดใจเย็น</button>
     </div>
   </header>
 
@@ -265,11 +264,6 @@
       setTimeout(() => (location.href = "passport.html"), 1600);
     }
 
-    // โหมดใจเย็น
-    document.getElementById("calmBtn").onclick = (e) => {
-      document.body.classList.toggle("calm");
-      e.target.textContent = document.body.classList.contains("calm") ? "🌙 กลับโหมดปกติ" : "🧘 โหมดใจเย็น";
-    };
 
     // เริ่มบทสนทนา
     addBubble("สวัสดี! เราคือบริดจ์ 🛸 พร้อมค้นหาความสามารถของตัวเองหรือยัง?");

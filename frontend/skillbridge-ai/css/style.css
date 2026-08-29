@@ -305,3 +305,7 @@ footer {
   background: rgba(139,123,255,.12); color: #c9c1ff; border: 1px solid rgba(139,123,255,.35);
 }
 .quick-chips button:hover { border-color: var(--purple); }
+
+/* แก้ตัดคำภาษาไทย — ตัดตามคำ ไม่ตัดกลางคำ */
+body { word-break: normal; overflow-wrap: anywhere; }
+.msg, .desc, h1, h2, h3, h4, .node-info, .login-card { overflow-wrap: anywhere; }
