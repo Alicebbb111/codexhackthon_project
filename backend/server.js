@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 require('dotenv').config(); // ต้องอยู่บรรทัดบนสุดเสมอ
 const express = require('express');
 const mysql = require('mysql2/promise');
@@ -102,3 +103,12 @@ app.post('/api/login', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`SkillBridge AI Server is running on port ${PORT}`);
 });
+=======
+require("dotenv").config();
+const app = require("./app");
+
+const port = process.env.PORT || 3000;
+if (require.main === module) app.listen(port, () => console.log(`Backend listening on port ${port}`));
+
+module.exports = app;
+>>>>>>> 76596bda4c9a4a0d96ffff0d09e5a6de628fedb8
