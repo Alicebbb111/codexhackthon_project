@@ -1,16 +1,10 @@
 {
-<<<<<<< HEAD
-  "name": "backend",
+  "name": "straight-2026-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "app.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "private": true,
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
@@ -18,9 +12,4 @@
     "express": "^5.2.1",
     "mysql2": "^3.24.2"
   }
-=======
-  "name": "straight-2026-backend",
-  "private": true,
-  "type": "commonjs"
->>>>>>> 76596bda4c9a4a0d96ffff0d09e5a6de628fedb8
 }
