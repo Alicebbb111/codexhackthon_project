@@ -46,6 +46,12 @@
         </div>
       </div>
 
+      <div class="card" style="margin-top:16px; display:flex; gap:24px; flex-wrap:wrap;">
+        <div><div class="desc">อาชีพที่แนะนำ</div><strong id="recommendedCareer">—</strong></div>
+        <div><div class="desc">อาชีพเป้าหมาย</div><strong id="targetCareer">—</strong></div>
+        <div><div class="desc">ความตรงกับตลาด</div><strong id="marketMatch">—</strong></div>
+      </div>
+
       <!-- ทักษะรวม -->
       <div class="card" style="margin-top:16px;">
         <h3 style="margin-bottom:16px;">📊 ทักษะของเราตอนนี้</h3>
@@ -70,12 +76,8 @@
   <script src="js/main.js"></script>
   <script>
     const d = window.MOCK_DATA.dashboard;
-    const r = window.MOCK_DATA.aiResult;
+    const mockResult = window.MOCK_DATA.aiResult;
 
-    document.getElementById("dashMascot").innerHTML = mascotSVG(76);
-    document.getElementById("nextLesson").textContent = d.nextLesson;
-
-    // นับเลขขึ้นแบบสวยๆ
     function countUp(el, target, suffix = "") {
       let cur = 0;
       const t = setInterval(() => {
@@ -84,20 +86,47 @@
         el.textContent = cur + suffix;
       }, 30);
     }
-    countUp(document.getElementById("streakNum"), d.streak);
-    countUp(document.getElementById("pointsNum"), d.points);
-    countUp(document.getElementById("readyNum"), r.careerReadiness, "%");
+    function render(result) {
+      document.getElementById("dashMascot").innerHTML = mascotSVG(76);
+      document.getElementById("nextLesson").textContent = d.nextLesson;
+      countUp(document.getElementById("streakNum"), d.streak);
+      countUp(document.getElementById("pointsNum"), d.points);
+      countUp(document.getElementById("readyNum"), Number(result.careerReadiness || 0), "%");
+      document.getElementById("recommendedCareer").textContent = result.recommendedCareer || result.career || "—";
+      document.getElementById("targetCareer").textContent = result.targetCareer || "—";
+      document.getElementById("marketMatch").textContent = result.marketMatch == null ? "—" : `${result.marketMatch}%`;
 
-    // รวมทักษะทั้งหมดเป็น bar
-    const all = [...r.technical, ...r.soft];
-    document.getElementById("allSkills").innerHTML = all.map((s) => `
+      const all = [...(result.technical || mockResult.technical), ...(result.soft || mockResult.soft)];
+      document.getElementById("allSkills").innerHTML = all.map((s) => `
       <div class="skill-row">
         <div class="head"><span>${s.name}</span><span>${s.score}%</span></div>
         <div class="bar"><span style="width:0%" data-w="${s.score}"></span></div>
       </div>`).join("");
-    requestAnimationFrame(() => {
-      document.querySelectorAll(".bar > span").forEach((b) => (b.style.width = b.dataset.w + "%"));
-    });
+      requestAnimationFrame(() => document.querySelectorAll(".bar > span").forEach((b) => (b.style.width = b.dataset.w + "%")));
+    }
+
+    async function loadDashboard() {
+      const stored = sessionStorage.getItem("sbResult");
+      const fallback = stored ? JSON.parse(stored) : mockResult;
+      const fallbackView = { ...fallback, careerReadiness: fallback.careerReadiness, marketMatch: fallback.careerMatch, targetCareer: fallback.goalCareer };
+      const userId = sessionStorage.getItem("sbUserId");
+      if (!userId) return render(fallbackView);
+      try {
+        const data = await window.SkillBridgeAPI.getDashboard(userId);
+        if (!data) return render(fallbackView);
+        render({
+          ...fallbackView,
+          careerReadiness: Number(data.readiness_score_avg),
+          recommendedCareer: data.recommended_career,
+          targetCareer: data.target_career,
+          marketMatch: Number(data.market_match_percentage),
+        });
+      } catch (error) {
+        console.warn("Dashboard backend unavailable; using fallback data.", error);
+        render(fallbackView);
+      }
+    }
+    loadDashboard();
   </script>
 </body>
 </html>

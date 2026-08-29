@@ -30,7 +30,15 @@
       <div>
         <h1>ค้นหาตัวเอง เรียนรู้ทักษะใหม่<br /><span class="hl">เชื่อมสู่งานที่ใช่</span></h1>
         <p>ให้ AI คอยช่วยดูว่าเราเก่งอะไร ควรเรียนอะไรต่อ และงานแบบไหนที่เหมาะกับเรา — เริ่มได้เลย ฟรี ไม่ต้องสมัครก่อน</p>
-        <a class="btn btn-lime" href="assessment.html" style="padding: 14px 28px; font-size: 1.05rem;">เริ่มทดสอบ 3 นาที ฟรี</a>
+        <form id="registerForm" style="display:grid; gap:8px; max-width:360px; margin-top:16px;">
+          <input name="username" required maxlength="50" placeholder="ชื่อผู้ใช้" />
+          <input name="name" required placeholder="ชื่อ" />
+          <input name="email" type="email" required placeholder="อีเมล" />
+          <input name="password" type="password" required minlength="8" placeholder="รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)" />
+          <input name="targetCareer" placeholder="อาชีพเป้าหมาย (ถ้ามี)" />
+          <button class="btn btn-lime" type="submit">เริ่มทดสอบ 3 นาที ฟรี</button>
+          <small id="registerError" style="color:#ff9d9d;"></small>
+        </form>
       </div>
       <div class="hero-mascot mascot-float" id="heroMascot"><!-- มาสคอตใส่ด้วย JS --></div>
     </section>
@@ -78,6 +86,19 @@
           <p class="desc">${s.desc}</p>
         </div>`)
       .join("");
+
+    document.getElementById("registerForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.currentTarget);
+      const error = document.getElementById("registerError");
+      error.textContent = "";
+      try {
+        const { user } = await window.SkillBridgeAPI.registerUser(form.get("username"), form.get("name"), form.get("email"), form.get("password"), form.get("targetCareer") || null);
+        sessionStorage.setItem("sbUserId", String(user.id));
+        sessionStorage.setItem("sbUser", JSON.stringify(user));
+        location.href = "assessment.html";
+      } catch (e) { error.textContent = e.message || "ลงทะเบียนไม่สำเร็จ"; }
+    });
   </script>
 </body>
 </html>

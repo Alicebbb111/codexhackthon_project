@@ -34,13 +34,6 @@
     .res-card { text-align: center; padding: 22px 16px; }
     .res-card .pct { font-size: 2.1rem; font-weight: 800; color: var(--lime); }
     .res-card .name { color: var(--text-dim); font-size: .9rem; margin-top: 4px; }
-
-    /* จัดบทสนทนาและปุ่มให้อยู่กึ่งกลางจอ */
-    .chat-box { display: flex; flex-direction: column; align-items: center; }
-    .chat-box .bubble { align-self: center; }
-    .chat-box .msg { text-align: center; }
-    .choices { justify-content: center; margin: 8px auto 20px; max-width: 640px; }
-    .career-grid { max-width: 640px; margin: 0 auto; }
   </style>
 </head>
 <body>
@@ -122,7 +115,6 @@
 
     function onAnswer(index) {
       if (step === 0) {
-        choicesBox.innerHTML = ""; // ลบปุ่มคำตอบชุดเก่าทิ้ง
         addBubble(["พร้อมแล้ว! ไปกันเลย 🚀", "ขอเริ่มเบาๆ ก่อน 😌"][index], true);
         askCareer();
       } else if (step === 1) {
@@ -136,7 +128,7 @@
         const item = quiz[step - 2];
         const isObj = typeof item.correctIndex === "number";
         const score = isObj ? (index === item.correctIndex ? 100 : 0) : Math.round(100 - index * (100 / (item.choices.length - 1)));
-        answers.push({ category: item.category, index, correct: isObj ? index === item.correctIndex : null, score });
+        answers.push({ category: item.category, skill_name: item.skill_name || null, skill_id: item.skill_id || null, index, correct: isObj ? index === item.correctIndex : null, score });
 
         // แสดงคำตอบ + เฉลยทันที (เฉพาะข้อที่มีคำตอบถูก)
         addBubble(item.choices[index], true);
@@ -193,6 +185,15 @@
       return Math.round(list.reduce((s, a) => s + a.score, 0) / list.length);
     }
 
+    function measuredSkillScores() {
+      const grouped = {};
+      answers.filter(a => a.skill_id && a.skill_name).forEach(a => {
+        grouped[a.skill_id] ||= { skill_id: a.skill_id, skill_name: a.skill_name, scores: [] };
+        grouped[a.skill_id].scores.push(a.score);
+      });
+      return Object.values(grouped).map(s => ({ skill_id: s.skill_id, skill_name: s.skill_name, score: Math.round(s.scores.reduce((a, b) => a + b, 0) / s.scores.length) }));
+    }
+
     function buildResult() {
       const tech = categoryScore("technical");
       const soft = categoryScore("soft");
@@ -240,35 +241,14 @@
       sessionStorage.setItem("sbResult", JSON.stringify(r));
 
       try {
-        // ดึงข้อมูล User ที่ Login อยู่จาก localStorage
-        const currentUser = JSON.parse(localStorage.getItem('user'));
-        const userId = currentUser ? currentUser.id : 1; // ถ้ายังไม่ล็อกอิน ให้ใช้ ID 1 เป็นค่าเริ่มต้น
-
-        // 🔗 เชื่อมต่อจริง: ส่งข้อมูลบันทึกลง MySQL ผ่าน Backend API
-        const response = await fetch('http://localhost:5000/api/assessment/submit', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                user_id: userId,
-                career_choice: careerChoice,
-                category_scores: r.categoryScores,
-                career_match: r.careerMatch,
-                answers: answers
-            })
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-            console.log("บันทึกผลควิสลง Database สำเร็จ:", data);
-        } else {
-            console.error("บันทึกไม่สำเร็จ:", data.error);
-        }
-
-      } catch (e) { 
-        console.error("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อบันทึกผลได้:", e); 
-      }
+        const userId = sessionStorage.getItem("sbUserId");
+        if (userId) await window.SkillBridgeAPI.saveDashboardResult(userId, r);
+        if (userId) await window.SkillBridgeAPI.saveUserSkills(userId, measuredSkillScores());
+        // จุดเชื่อม MySQL — บันทึกคำตอบ (ตอนนี้ยังเป็น mock)
+        await window.SkillBridgeAPI.saveAssessment({ careerChoice, answers });
+        // จุดเชื่อม AI — ส่งผลให้โมเดลวิเคราะห์ต่อ (ตอนนี้ยังเป็น mock)
+        await window.SkillBridgeAPI.aiPredict({ careerChoice, answers });
+      } catch (e) { /* ยังไม่ต่อ backend — ข้ามไปได้ */ }
 
       addBubble("ไปดูพาสปอร์ตทักษะกันเลย!");
       setTimeout(() => (location.href = "passport.html"), 1600);
