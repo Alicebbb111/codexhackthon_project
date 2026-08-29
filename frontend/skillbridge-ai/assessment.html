@@ -121,10 +121,12 @@
       walker.style.left = `calc(${(done / quiz.length) * 100}% - ${done === quiz.length ? 20 : 0}px)`;
     }
 
-    function onAnswer(index) {
+    async function onAnswer(index) {
       if (step === 0) {
         choicesBox.innerHTML = ""; // ลบปุ่มคำตอบชุดเก่าทิ้ง
         addBubble(["พร้อมแล้ว! ไปกันเลย 🚀", "ขอเริ่มเบาๆ ก่อน 😌"][index], true);
+        addBubble("กำลังเตรียมแบบทดสอบให้เหมาะกับเรา…");
+        await quizReady;
         askCareer();
       } else if (step === 1) {
         step = 2; // จบเฟสเลือกอาชีพ เริ่มเฟสควิซ
@@ -223,28 +225,36 @@
       const skill = String(data.skill_name || data.skill || "");
       if (!skillIds[skill]) return null;
       const choices = data.choices.map(c => typeof c === "string" ? c : c.text).filter(Boolean);
-      if (choices.length !== 4 || data.correct_answer == null) return null;
-      let correctIndex = Number.isInteger(data.correct_index) ? data.correct_index : (Number.isInteger(data.correct_answer) ? data.correct_answer : choices.findIndex(c => c === data.correct_answer));
+      if (choices.length !== 4 || (data.correct_answer == null && data.correctIndex == null) || !String(data.explanation || "").trim()) return null;
+      let correctIndex = Number.isInteger(data.correct_index) ? data.correct_index : (Number.isInteger(data.correctIndex) ? data.correctIndex : (Number.isInteger(data.correct_answer) ? data.correct_answer : choices.findIndex(c => c === data.correct_answer)));
       if (correctIndex < 0 || correctIndex > 3) { const letter = String(data.correct_answer).toUpperCase(); correctIndex = "ABCD".indexOf(letter); }
       if (correctIndex < 0) return null;
       return { category:"technical", label:"ทักษะเทคนิค", q:String(data.question), choices, correctIndex, skill_name:skill, skill_id:skillIds[skill], explanation:data.explanation || "" };
+    }
+
+    function validBatchQuiz(items) {
+      const required = Object.keys(skillIds);
+      if (!Array.isArray(items)) return false;
+      const technical = items.filter(q => q.category === "technical");
+      if (technical.length !== 10 || technical.some(q => !validAiQuiz(q))) return false;
+      return required.every(skill => technical.filter(q => q.skill_name === skill).length === 2);
     }
 
     async function prepareQuiz() {
       const fallback = window.MOCK_DATA.quiz;
       try {
         const cached = sessionStorage.getItem("sbAssessmentQuiz");
-        if (cached) { const parsed=JSON.parse(cached); if(Array.isArray(parsed) && parsed.length) return parsed; }
+        if (cached) { const parsed=JSON.parse(cached); if(validBatchQuiz(parsed)){ console.info("[Assessment] source: CACHE"); return parsed; } sessionStorage.removeItem("sbAssessmentQuiz"); }
       } catch (e) {}
       try {
         const skills = Object.keys(skillIds);
         const generated = await SkillBridgeAPI.generateAssessmentQuiz({ target_career:"Data Analyst", skills, current_skill_levels:{}, baseline:true, requested_question_count:10 });
         const generatedQuestions = (generated.questions || []).map(validAiQuiz).filter(Boolean);
-        if (generatedQuestions.length >= skills.length && skills.every(s => generatedQuestions.some(q => q.skill_name === s))) {
-          const merged=[...generatedQuestions, ...fallback.filter(q=>q.category !== "technical")]; sessionStorage.setItem("sbAssessmentQuiz",JSON.stringify(merged)); return merged;
+        if (generatedQuestions.length === 10 && skills.every(s => generatedQuestions.filter(q => q.skill_name === s).length === 2)) {
+          const merged=[...generatedQuestions, ...fallback.filter(q=>q.category !== "technical")]; sessionStorage.setItem("sbAssessmentQuiz",JSON.stringify(merged)); console.info("[Assessment] source: AI"); return merged;
         }
       } catch (e) { console.warn("AI quiz unavailable; using fixed assessment.", e); }
-      return fallback;
+      addBubble("กำลังใช้แบบประเมินสำรอง เนื่องจากยังสร้างแบบ AI ไม่สำเร็จ"); console.info("[Assessment] source: FALLBACK"); return fallback;
     }
 
     async function finish() {
@@ -296,7 +306,7 @@
     // เริ่มบทสนทนา; quiz generation is cached and never blocks fallback use
     addBubble("สวัสดี! เราคือบริดจ์ 🛸 พร้อมค้นหาความสามารถของตัวเองหรือยัง?");
     setChoices(["พร้อมแล้ว! 🚀", "ขอเริ่มเบาๆ ก่อน 😌"]);
-    prepareQuiz().then(q => { quiz = q; }).catch(() => {});
+    const quizReady = prepareQuiz().then(q => { quiz = q; return q; });
   </script>
 </body>
 </html>
