@@ -83,17 +83,18 @@
     <div id="extraBox"></div>
   </main>
 
-  <script src="js/mockData.js?v=2"></script>
-  <script src="js/api.js?v=2"></script>
-  <script src="js/main.js?v=2"></script>
+  <script src="js/mockData.js?v=3"></script>
+  <script src="js/api.js?v=3"></script>
+  <script src="js/main.js?v=3"></script>
   <script>
-    const quiz = window.MOCK_DATA.quiz;
+    let quiz = window.MOCK_DATA.quiz;
+    const skillIds = { Excel: 1, SQL: 2, Python: 3, Statistics: 4, "Data Visualization": 5 };
     const careers = window.MOCK_DATA.careers;
     const profiles = window.MOCK_DATA.careerProfiles;
 
     let step = 0;              // 0 = ทักทาย, 1 = ฟอร์มเลือกอาชีพ, 2+ = ควิซ
     let careerChoice = null;   // อาชีพที่ผู้เรียนเลือก
-    const answers = [];        // [{ category, index, correct|null, score }]
+    const answers = [];        // [{ category, skill_name, skill_id, index, correct|null, score }]
     const chatBox = document.getElementById("chatBox");
     const choicesBox = document.getElementById("choicesBox");
     const extraBox = document.getElementById("extraBox");
@@ -134,10 +135,12 @@
       walker.style.left = `calc(${(done / quiz.length) * 100}% - ${done === quiz.length ? 20 : 0}px)`;
     }
 
-    function onAnswer(index) {
+    async function onAnswer(index) {
       if (step === 0) {
         choicesBox.innerHTML = ""; // ลบปุ่มคำตอบชุดเก่าทิ้ง
         addBubble(["พร้อมแล้ว! ไปกันเลย 🚀", "ขอเริ่มเบาๆ ก่อน 😌"][index], true);
+        addBubble("กำลังเตรียมแบบทดสอบให้เหมาะกับเรา…");
+        await quizReady;
         askCareer();
       } else if (step === 1) {
         step = 2; // จบเฟสเลือกอาชีพ เริ่มเฟสควิซ
@@ -150,7 +153,7 @@
         const item = quiz[step - 2];
         const isObj = typeof item.correctIndex === "number";
         const score = isObj ? (index === item.correctIndex ? 100 : 0) : Math.round(100 - index * (100 / (item.choices.length - 1)));
-        answers.push({ category: item.category, index, correct: isObj ? index === item.correctIndex : null, score });
+        answers.push({ category: item.category, skill_name: item.skill_name || null, skill_id: item.skill_id || null, index, correct: isObj ? index === item.correctIndex : null, score });
 
         // แสดงคำตอบ + เฉลยทันที (เฉพาะข้อที่มีคำตอบถูก)
         addBubble(item.choices[index], true);
@@ -231,6 +234,43 @@
       };
     }
 
+    function validAiQuiz(data) {
+      if (!data || typeof data !== "object" || !data.question || !Array.isArray(data.choices) || data.choices.length !== 4) return null;
+      const skill = String(data.skill_name || data.skill || "");
+      if (!skillIds[skill]) return null;
+      const choices = data.choices.map(c => typeof c === "string" ? c : c.text).filter(Boolean);
+      if (choices.length !== 4 || (data.correct_answer == null && data.correctIndex == null) || !String(data.explanation || "").trim()) return null;
+      let correctIndex = Number.isInteger(data.correct_index) ? data.correct_index : (Number.isInteger(data.correctIndex) ? data.correctIndex : (Number.isInteger(data.correct_answer) ? data.correct_answer : choices.findIndex(c => c === data.correct_answer)));
+      if (correctIndex < 0 || correctIndex > 3) { const letter = String(data.correct_answer).toUpperCase(); correctIndex = "ABCD".indexOf(letter); }
+      if (correctIndex < 0) return null;
+      return { category:"technical", label:"ทักษะเทคนิค", q:String(data.question), choices, correctIndex, skill_name:skill, skill_id:skillIds[skill], explanation:data.explanation || "" };
+    }
+
+    function validBatchQuiz(items) {
+      const required = Object.keys(skillIds);
+      if (!Array.isArray(items)) return false;
+      const technical = items.filter(q => q.category === "technical");
+      if (technical.length !== 10 || technical.some(q => !validAiQuiz(q))) return false;
+      return required.every(skill => technical.filter(q => q.skill_name === skill).length === 2);
+    }
+
+    async function prepareQuiz() {
+      const fallback = window.MOCK_DATA.quiz;
+      try {
+        const cached = sessionStorage.getItem("sbAssessmentQuiz");
+        if (cached) { const parsed=JSON.parse(cached); if(validBatchQuiz(parsed)){ console.info("[Assessment] source: CACHE"); return parsed; } sessionStorage.removeItem("sbAssessmentQuiz"); }
+      } catch (e) {}
+      try {
+        const skills = Object.keys(skillIds);
+        const generated = await SkillBridgeAPI.generateAssessmentQuiz({ target_career:"Data Analyst", skills, current_skill_levels:{}, baseline:true, requested_question_count:10 });
+        const generatedQuestions = (generated.questions || []).map(validAiQuiz).filter(Boolean);
+        if (generatedQuestions.length === 10 && skills.every(s => generatedQuestions.filter(q => q.skill_name === s).length === 2)) {
+          const merged=[...generatedQuestions, ...fallback.filter(q=>q.category !== "technical")]; sessionStorage.setItem("sbAssessmentQuiz",JSON.stringify(merged)); console.info("[Assessment] source: AI"); return merged;
+        }
+      } catch (e) { console.warn("AI quiz unavailable; using fixed assessment.", e); }
+      addBubble("กำลังใช้แบบประเมินสำรอง เนื่องจากยังสร้างแบบ AI ไม่สำเร็จ"); console.info("[Assessment] source: FALLBACK"); return fallback;
+    }
+
     async function finish() {
       moveWalker();
       const r = buildResult();
@@ -252,6 +292,13 @@
 
       // เก็บผลไว้ให้หน้าพาสปอร์ต/แดชบอร์ดใช้
       sessionStorage.setItem("sbResult", JSON.stringify(r));
+      const userId = sessionStorage.getItem("sbUserId");
+      if (userId && window.SkillBridgeAPI) {
+        Promise.allSettled([
+          SkillBridgeAPI.saveDashboardResult(userId, r),
+          SkillBridgeAPI.saveUserSkills(userId, measuredSkillScores())
+        ]).catch(() => {});
+      }
 
       try {
         // จุดเชื่อม MySQL — บันทึกคำตอบ (ตอนนี้ยังเป็น mock)
@@ -265,10 +312,10 @@
     }
 
 
-    // เริ่มบทสนทนา
+    // เริ่มบทสนทนา; quiz generation is cached and never blocks fallback use
     addBubble("สวัสดี! เราคือบริดจ์ 🛸 พร้อมค้นหาความสามารถของตัวเองหรือยัง?");
     setChoices(["พร้อมแล้ว! 🚀", "ขอเริ่มเบาๆ ก่อน 😌"]);
-
+    const quizReady = prepareQuiz().then(q => { quiz = q; return q; });
     /* ============================================================
        [โหมด AI] สร้างควิซ 10 ข้อจากหัวข้อ — เรียก /api/ai/quiz
        (backend เจนทีละข้อ เราจึงเรียกซ้ำ 10 รอบ ส่งประวัติคำตอบไปด้วย
