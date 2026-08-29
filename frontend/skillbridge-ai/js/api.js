@@ -33,6 +33,8 @@ function getDashboard(userId){return callApi(`/dashboard/${userId}`,null)}
 function getDashboardSkills(userId){return callApi(`/dashboard/${userId}/skills`,null)}
 function saveUserSkills(userId,skills){return callApi(`/dashboard/${userId}/skills`,null,{method:"POST",body:JSON.stringify({skills})})}
 function generateLearningPath(input){return callApi("/ai/learning-path",null,{method:"POST",body:JSON.stringify(input)})}
+function generateAdaptiveQuiz(input){return callApi("/ai/quiz",null,{method:"POST",body:JSON.stringify(input)})}
+function generateAssessmentQuiz(input){return callApi("/ai/assessment-quiz",null,{method:"POST",body:JSON.stringify(input)})}
 
 /** บันทึกคะแนนแบบทดสอบลง MySQL (ตาราง assessments) */
 function saveAssessment(answers) {
@@ -70,4 +72,4 @@ async function aiChat(message) {
   return data.reply;
 }
 
-window.SkillBridgeAPI = { getUserProfile, registerUser, saveDashboardResult, getDashboard, getDashboardSkills, saveUserSkills, generateLearningPath, saveAssessment, aiPredict, aiChat };
+window.SkillBridgeAPI = { getUserProfile, registerUser, saveDashboardResult, getDashboard, getDashboardSkills, saveUserSkills, generateLearningPath, generateAdaptiveQuiz, generateAssessmentQuiz, saveAssessment, aiPredict, aiChat };

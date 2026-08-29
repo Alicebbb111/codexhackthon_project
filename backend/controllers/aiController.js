@@ -3,6 +3,7 @@ const {
   recommendCareers,
   generateLearningPath,
   generateAdaptiveQuiz,
+  generateAssessmentQuiz,
   generateQuizFeedback,
 } = require("../../ai/aiService");
 const { analyzeSkills } = require("../../ai/skillAnalysis");
@@ -27,10 +28,11 @@ const learningPath = handle(input => generateLearningPath({
   ...analyzeSkills(input.current_skills, input.target_career || "Data Analyst"),
 }));
 const adaptiveQuiz = handle(generateAdaptiveQuiz);
+const assessmentQuiz = handle(generateAssessmentQuiz);
 const quizFeedback = handle(async input => {
   const selected = input.student_answer ?? input.selected_answer;
   const correct = input.correct_answer;
   return generateQuizFeedback({ ...input, is_correct: selected === correct });
 });
 
-module.exports = { skillProfile, careerRecommendation, learningPath, adaptiveQuiz, quizFeedback };
+module.exports = { skillProfile, careerRecommendation, learningPath, adaptiveQuiz, assessmentQuiz, quizFeedback };

@@ -6,6 +6,7 @@ router.post("/skill-profile", controller.skillProfile);
 router.post("/career-recommendation", controller.careerRecommendation);
 router.post("/learning-path", controller.learningPath);
 router.post("/quiz", controller.adaptiveQuiz);
+router.post("/assessment-quiz", controller.assessmentQuiz);
 router.post("/quiz-feedback", controller.quizFeedback);
 
 module.exports = router;

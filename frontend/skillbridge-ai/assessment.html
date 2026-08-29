@@ -59,21 +59,6 @@
   </header>
 
   <main>
-    <!-- [โหมด AI] สร้างควิซจากหัวข้อที่พิมพ์ — เรียก POST /api/ai/quiz ของทีม backend -->
-    <section class="card glow" id="aiPanel" style="max-width: 720px; margin: 0 auto 34px;">
-      <h3 style="margin-bottom: 4px;">🤖 สร้างควิซด้วย AI — พิมพ์หัวข้อที่อยากรู้</h3>
-      <p class="desc" style="margin-bottom: 14px;">AI จะเจนข้อสอบ 10 ข้อจากหัวข้อนั้น พร้อมเฉลยทันทีทีละข้อ พิมพ์หัวข้อใหม่ได้เรื่อยๆ</p>
-      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <input id="aiTopic" type="text" placeholder="เช่น SQL JOIN, การตลาดออนไลน์, Python list"
-          style="flex: 1; min-width: 220px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-deep); color: var(--text); font-family: inherit; outline: none;" />
-        <button class="btn btn-lime" id="aiGenBtn">เจน 10 ข้อ</button>
-      </div>
-      <div id="aiStatus" style="color: var(--text-dim); font-size: .9rem; margin-top: 10px; display: none;"></div>
-
-      <!-- พื้นที่ควิซที่ AI เจน -->
-      <div id="aiQuizArea" style="display: none; margin-top: 20px;"></div>
-    </section>
-
     <div class="progress-bridge" id="bridge" style="visibility: hidden;">
       <div class="walker" id="walker"></div>
       <div class="track"></div>
@@ -88,13 +73,14 @@
   <script src="js/api.js?v=2"></script>
   <script src="js/main.js?v=2"></script>
   <script>
-    const quiz = window.MOCK_DATA.quiz;
+    let quiz = window.MOCK_DATA.quiz;
+    const skillIds = { Excel: 1, SQL: 2, Python: 3, Statistics: 4, "Data Visualization": 5 };
     const careers = window.MOCK_DATA.careers;
     const profiles = window.MOCK_DATA.careerProfiles;
 
     let step = 0;              // 0 = ทักทาย, 1 = ฟอร์มเลือกอาชีพ, 2+ = ควิซ
     let careerChoice = null;   // อาชีพที่ผู้เรียนเลือก
-    const answers = [];        // [{ category, index, correct|null, score }]
+    const answers = [];        // [{ category, skill_name, skill_id, index, correct|null, score }]
     const chatBox = document.getElementById("chatBox");
     const choicesBox = document.getElementById("choicesBox");
     const extraBox = document.getElementById("extraBox");
@@ -151,7 +137,7 @@
         const item = quiz[step - 2];
         const isObj = typeof item.correctIndex === "number";
         const score = isObj ? (index === item.correctIndex ? 100 : 0) : Math.round(100 - index * (100 / (item.choices.length - 1)));
-        answers.push({ category: item.category, index, correct: isObj ? index === item.correctIndex : null, score });
+        answers.push({ category: item.category, skill_name: item.skill_name || null, skill_id: item.skill_id || null, index, correct: isObj ? index === item.correctIndex : null, score });
 
         // แสดงคำตอบ + เฉลยทันที (เฉพาะข้อที่มีคำตอบถูก)
         addBubble(item.choices[index], true);
@@ -232,6 +218,35 @@
       };
     }
 
+    function validAiQuiz(data) {
+      if (!data || typeof data !== "object" || !data.question || !Array.isArray(data.choices) || data.choices.length !== 4) return null;
+      const skill = String(data.skill_name || data.skill || "");
+      if (!skillIds[skill]) return null;
+      const choices = data.choices.map(c => typeof c === "string" ? c : c.text).filter(Boolean);
+      if (choices.length !== 4 || data.correct_answer == null) return null;
+      let correctIndex = Number.isInteger(data.correct_index) ? data.correct_index : (Number.isInteger(data.correct_answer) ? data.correct_answer : choices.findIndex(c => c === data.correct_answer));
+      if (correctIndex < 0 || correctIndex > 3) { const letter = String(data.correct_answer).toUpperCase(); correctIndex = "ABCD".indexOf(letter); }
+      if (correctIndex < 0) return null;
+      return { category:"technical", label:"ทักษะเทคนิค", q:String(data.question), choices, correctIndex, skill_name:skill, skill_id:skillIds[skill], explanation:data.explanation || "" };
+    }
+
+    async function prepareQuiz() {
+      const fallback = window.MOCK_DATA.quiz;
+      try {
+        const cached = sessionStorage.getItem("sbAssessmentQuiz");
+        if (cached) { const parsed=JSON.parse(cached); if(Array.isArray(parsed) && parsed.length) return parsed; }
+      } catch (e) {}
+      try {
+        const skills = Object.keys(skillIds);
+        const generated = await SkillBridgeAPI.generateAssessmentQuiz({ target_career:"Data Analyst", skills, current_skill_levels:{}, baseline:true, requested_question_count:10 });
+        const generatedQuestions = (generated.questions || []).map(validAiQuiz).filter(Boolean);
+        if (generatedQuestions.length >= skills.length && skills.every(s => generatedQuestions.some(q => q.skill_name === s))) {
+          const merged=[...generatedQuestions, ...fallback.filter(q=>q.category !== "technical")]; sessionStorage.setItem("sbAssessmentQuiz",JSON.stringify(merged)); return merged;
+        }
+      } catch (e) { console.warn("AI quiz unavailable; using fixed assessment.", e); }
+      return fallback;
+    }
+
     async function finish() {
       moveWalker();
       const r = buildResult();
@@ -278,123 +293,10 @@
       e.target.textContent = document.body.classList.contains("calm") ? "🌙 กลับโหมดปกติ" : "🧘 โหมดใจเย็น";
     };
 
-    // เริ่มบทสนทนา
+    // เริ่มบทสนทนา; quiz generation is cached and never blocks fallback use
     addBubble("สวัสดี! เราคือบริดจ์ 🛸 พร้อมค้นหาความสามารถของตัวเองหรือยัง?");
     setChoices(["พร้อมแล้ว! 🚀", "ขอเริ่มเบาๆ ก่อน 😌"]);
-
-    /* ============================================================
-       [โหมด AI] สร้างควิซ 10 ข้อจากหัวข้อ — เรียก /api/ai/quiz
-       (backend เจนทีละข้อ เราจึงเรียกซ้ำ 10 รอบ ส่งประวัติคำตอบไปด้วย
-        เพื่อให้ AI ปรับระดับความยากตามคน — adaptive)
-       ============================================================ */
-    const AI_API = "http://localhost:5000/api/ai/quiz";
-    const AI_TOTAL = 10;
-    let aiQuestions = [], aiIndex = 0, aiScore = 0;
-
-    const aiTopicInput = document.getElementById("aiTopic");
-    const aiGenBtn = document.getElementById("aiGenBtn");
-    const aiStatus = document.getElementById("aiStatus");
-    const aiArea = document.getElementById("aiQuizArea");
-
-    function aiShowStatus(text) { aiStatus.style.display = "block"; aiStatus.textContent = text; }
-
-    async function askAiOne(topic, history) {
-      const res = await fetch(AI_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          target_skill: topic,
-          topic: topic,
-          assessed_level: "beginner",
-          previous_answers: history,
-        }),
-      });
-      if (!res.ok) throw new Error("API ตอบ " + res.status);
-      return res.json();
-    }
-
-    async function aiGenerate() {
-      const topic = aiTopicInput.value.trim();
-      if (!topic) { aiShowStatus("พิมพ์หัวข้อก่อนนะ 🙂"); return; }
-
-      aiGenBtn.disabled = true;
-      aiArea.style.display = "none";
-      aiShowStatus("กำลังให้ AI สร้างข้อสอบหัวข้อ \"" + topic + "\" … ข้อที่ 1/" + AI_TOTAL);
-
-      aiQuestions = []; aiIndex = 0; aiScore = 0;
-      const history = [];
-      try {
-        for (let i = 0; i < AI_TOTAL; i++) {
-          aiShowStatus(`กำลังให้ AI สร้างข้อสอบหัวข้อ "${topic}" … ข้อที่ ${i + 1}/${AI_TOTAL}`);
-          const q = await askAiOne(topic, history);
-          aiQuestions.push(q);
-          history.push({ topic: q.topic || topic, question: q.question, correct_answer: q.correct_answer, is_correct: null });
-        }
-        aiStatus.style.display = "none";
-        aiIndex = 0;
-        aiArea.style.display = "block";
-        aiRenderQuestion();
-      } catch (err) {
-        aiShowStatus("⚠️ เชื่อมต่อ AI ไม่สำเร็จ (" + err.message + ") — ต้องรัน backend (npm start) และตั้งค่า OPENAI_API_KEY ใน backend/.env ก่อน");
-        aiGenBtn.disabled = false;
-      }
-    }
-
-    function aiRenderQuestion() {
-      const q = aiQuestions[aiIndex];
-      const choicesHtml = (q.choices || []).map(c =>
-        `<button class="choice" data-id="${c.id}" style="margin: 0 0 10px;">${c.id}. ${c.text}</button>`).join("");
-      aiArea.innerHTML = `
-        <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
-          <span class="cat-chip technical">🤖 AI · ${q.topic || aiTopicInput.value}</span>
-          <span style="color:var(--text-dim); font-size:.85rem;">ข้อ ${aiIndex + 1}/${aiQuestions.length} · คะแนน ${aiScore}</span>
-        </div>
-        <div class="msg" style="margin-bottom:14px;">${q.question}</div>
-        <div style="display:flex; flex-direction:column; align-items:flex-start;">${choicesHtml}</div>
-        <div id="aiFeedback"></div>`;
-
-      aiArea.querySelectorAll(".choice").forEach((b) => {
-        b.onclick = () => aiPick(b, q);
-      });
-    }
-
-    function aiPick(btn, q) {
-      if (aiArea.querySelector(".choice:disabled")) return;
-      const picked = btn.dataset.id;
-      const correct = picked === q.correct_answer;
-      if (correct) aiScore++;
-
-      aiArea.querySelectorAll(".choice").forEach((b) => {
-        b.disabled = true;
-        if (b.dataset.id === q.correct_answer) b.style.borderColor = "var(--mint)";
-        if (b === btn && !correct) b.style.borderColor = "#ff8f8f";
-      });
-
-      document.getElementById("aiFeedback").innerHTML = `
-        <div class="feedback ${correct ? "correct" : "wrong"}">
-          ${correct ? "✅ ถูกต้อง!" : "❌ ยังไม่ถูก — คำตอบที่ถูกคือ " + q.correct_answer}
-          ${q.explanation ? `<br><span style="color:var(--text); font-size:.88rem;">💡 ${q.explanation}</span>` : ""}
-        </div>
-        <button class="btn btn-lime" id="aiNextBtn" style="margin-top:6px;">${aiIndex + 1 < aiQuestions.length ? "ข้อต่อไป" : "ดูผลคะแนน"}</button>`;
-      document.getElementById("aiNextBtn").onclick = aiNext;
-    }
-
-    function aiNext() {
-      aiIndex++;
-      if (aiIndex < aiQuestions.length) { aiRenderQuestion(); return; }
-      // จบชุด — สรุปคะแนน + ชวนพิมพ์หัวข้อใหม่
-      aiArea.innerHTML = `
-        <div class="card glow" style="text-align:center; padding: 26px;">
-          <div style="font-size: 2rem;">🎉</div>
-          <div style="font-size: 2rem; font-weight: 800; color: var(--lime);">${aiScore}/${aiQuestions.length}</div>
-          <p class="desc">คะแนนหัวข้อ "${aiQuestions[0]?.topic || aiTopicInput.value}"</p>
-          <button class="btn btn-lime" style="margin-top: 12px;" onclick="document.getElementById('aiTopic').focus()">พิมพ์หัวข้อใหม่ต่อเลย</button>
-        </div>`;
-      aiGenBtn.disabled = false;
-    }
-
-    aiGenBtn.onclick = aiGenerate;
-    aiTopicInput.addEventListener("keydown", (e) => { if (e.key === "Enter") aiGenerate(); });
+    prepareQuiz().then(q => { quiz = q; }).catch(() => {});
   </script>
 </body>
 </html>
