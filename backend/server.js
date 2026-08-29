@@ -98,7 +98,40 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// API สำหรับบันทึกผลประเมิน (Assessment Result) ลง Aiven MySQL
+app.post('/api/assessment/submit', async (req, res) => {
+    try {
+        const { user_id, career_choice, category_scores, career_match, answers } = req.body;
+
+        // บันทึกลงตาราง user_quiz_results หรือตารางแดชบอร์ด
+        const [result] = await pool.query(
+            `INSERT INTO user_dashboards (user_id, technical_score_avg, soft_score_avg, readiness_score_avg, recommended_career, market_match_percentage) 
+             VALUES (?, ?, ?, ?, ?, ?) 
+             ON DUPLICATE KEY UPDATE 
+             technical_score_avg = VALUES(technical_score_avg), 
+             soft_score_avg = VALUES(soft_score_avg), 
+             readiness_score_avg = VALUES(readiness_score_avg), 
+             recommended_career = VALUES(recommended_career), 
+             market_match_percentage = VALUES(market_match_percentage)`,
+            [
+                user_id || 1,
+                category_scores.technical,
+                category_scores.soft,
+                category_scores.career,
+                career_choice,
+                career_match
+            ]
+        );
+
+        res.status(200).json({ message: "บันทึกผลควิสลงฐานข้อมูลสำเร็จ!", result });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // เริ่มรัน Server
 app.listen(PORT, () => {
     console.log(`SkillBridge AI Server is running on port ${PORT}`);
 });
+
