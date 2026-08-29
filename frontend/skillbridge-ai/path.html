@@ -43,12 +43,12 @@
   <script src="js/api.js"></script>
   <script src="js/main.js"></script>
   <script>
-    const path = window.MOCK_DATA.learningPath; // TODO: เปลี่ยนเป็นเส้นทางที่ AI แนะนำจริง
+    let path = window.MOCK_DATA.learningPath;
     const icons = { done: "✔️", current: "🪐", locked: "🌑" };
     const states = { done: "เรียนแล้ว", current: "กำลังเรียน", locked: "ยังไม่ปลดล็อก" };
 
     const map = document.getElementById("pathMap");
-    map.innerHTML = path.map((n, i) => `
+    function renderPath(items){ path=items; map.innerHTML = path.map((n, i) => `
       <div class="node-item ${n.state}">
         <div class="node-dot" data-i="${i}" title="${n.title}">${icons[n.state]}</div>
         <div class="node-info" style="padding-top:12px;">
@@ -56,7 +56,14 @@
           <h4>${i + 1}. ${n.title}</h4>
           <p class="desc">${n.desc}</p>
         </div>
-      </div>`).join("");
+      </div>`).join(""); }
+    function aiPathToUi(data){return (data.learning_path||[]).map((s,i)=>({title:`${s.skill} — ${s.topic}`,desc:s.reason,state:i===0?"current":"locked",hours:1}));}
+    async function loadPath(){
+      try { const c=sessionStorage.getItem("sbLearningPath"); if(c){const d=JSON.parse(c); if(d.learning_path)return renderPath(aiPathToUi(d));} } catch(e){}
+      const id=sessionStorage.getItem("sbUserId"); if(!id)return renderPath(path);
+      try { const [d,s]=await Promise.all([SkillBridgeAPI.getDashboard(id),SkillBridgeAPI.getDashboardSkills(id)]); const rows=s&&s.skills||[]; if(!rows.length)return renderPath(path); const out=await SkillBridgeAPI.generateLearningPath({target_career:d.target_career||"Data Analyst",current_skills:Object.fromEntries(rows.map(x=>[x.skill_name,Number(x.score)]))}); sessionStorage.setItem("sbLearningPath",JSON.stringify(out)); renderPath(aiPathToUi(out)); } catch(e){renderPath(path);}
+    }
+    loadPath();
 
     const panel = document.getElementById("lessonPanel");
     map.addEventListener("click", (e) => {

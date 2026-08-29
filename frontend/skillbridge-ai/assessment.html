@@ -238,6 +238,13 @@
 
       // เก็บผลไว้ให้หน้าพาสปอร์ต/แดชบอร์ดใช้
       sessionStorage.setItem("sbResult", JSON.stringify(r));
+      const userId = sessionStorage.getItem("sbUserId");
+      if (userId && window.SkillBridgeAPI) {
+        Promise.allSettled([
+          SkillBridgeAPI.saveDashboardResult(userId, r),
+          SkillBridgeAPI.saveUserSkills(userId, measuredSkillScores())
+        ]).catch(() => {});
+      }
 
       try {
         // จุดเชื่อม MySQL — บันทึกคำตอบ (ตอนนี้ยังเป็น mock)
