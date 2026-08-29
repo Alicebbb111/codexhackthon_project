@@ -36,6 +36,7 @@
       <h3 id="lessonTitle" style="margin-bottom:6px;"></h3>
       <p class="desc" id="lessonDesc" style="margin-bottom:14px;"></p>
       <button class="btn btn-lime" id="startLessonBtn" style="width:100%;">เริ่มเรียน</button>
+      <p id="lessonNotice" class="desc" style="display:none; margin-top:10px;">บทเรียนนี้กำลังเตรียมเนื้อหา กรุณาเลือกขั้นตอนถัดไปใน Learning Path</p>
     </div>
   </main>
 
@@ -76,8 +77,9 @@
       panel.classList.add("open");
     });
 
-    document.getElementById("startLessonBtn").onclick = () =>
-      alert("เนื้อหาบทเรียนจะเชื่อมกับระบบเรียนรู้หลังต่อฐานข้อมูล 🛸");
+    document.getElementById("startLessonBtn").onclick = () => {
+      document.getElementById("lessonNotice").style.display = "block";
+    };
   </script>
 </body>
 </html>
