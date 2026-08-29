@@ -249,3 +249,59 @@ footer {
   .navbar nav { order: 3; width: 100%; justify-content: center; }
   .choices { margin-left: 0; }
 }
+
+/* ============================================================
+   ฟีเจอร์ทดลอง (ยังไม่อัป GitHub): ภารกิจ, ตราสำเร็จ, อันดับ,
+   เสียงจากเยาวชน, FAQ, แชทด่วน
+   ============================================================ */
+.quest-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.quest-row:last-child { border-bottom: none; }
+.quest-row .ic { font-size: 1.4rem; }
+.quest-row .t { flex: 1; }
+.quest-row .t .name { font-size: .95rem; }
+.quest-row .t .prog { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.quest-row .t .prog .bar { flex: 1; height: 6px; }
+.quest-row .pts { color: var(--lime); font-weight: 700; font-size: .85rem; }
+.quest-claim {
+  border: 1px solid var(--lime); color: var(--lime); background: transparent;
+  border-radius: 8px; padding: 5px 12px; cursor: pointer; font-family: inherit; font-size: .82rem; font-weight: 700;
+}
+.quest-claim:hover { background: rgba(166,255,77,.12); }
+.quest-claim:disabled { opacity: .35; cursor: default; }
+
+.badges-row { display: flex; gap: 14px; flex-wrap: wrap; }
+.badge {
+  width: 86px; text-align: center; padding: 12px 6px;
+  background: var(--bg-card); border: 1px solid var(--line); border-radius: 14px;
+}
+.badge .ic { font-size: 1.8rem; display: block; }
+.badge .nm { font-size: .74rem; color: var(--text-dim); margin-top: 6px; display: block; }
+.badge.locked { opacity: .35; filter: grayscale(1); }
+.badge.unlocked { border-color: rgba(166,255,77,.4); box-shadow: var(--glow-lime); }
+
+.rank-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+.rank-row .no { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(255,255,255,.06); font-size: .8rem; font-weight: 800; }
+.rank-row.top .no { background: rgba(166,255,77,.2); color: var(--lime); }
+.rank-row .nm { flex: 1; font-size: .92rem; }
+.rank-row .sc { color: var(--lime); font-weight: 700; font-size: .9rem; }
+.rank-row.me { background: rgba(139,123,255,.1); border-radius: 10px; padding: 8px 10px; }
+
+.story-card { display: flex; flex-direction: column; gap: 10px; }
+.story-card .quote { font-size: .95rem; line-height: 1.7; }
+.story-card .who { display: flex; align-items: center; gap: 10px; }
+.story-card .who .role { color: var(--text-dim); font-size: .8rem; }
+.story-card .stars-c { color: #ffd34d; font-size: .85rem; }
+
+.faq-item { background: var(--bg-card); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+.faq-item summary { cursor: pointer; padding: 14px 18px; font-weight: 600; list-style: none; }
+.faq-item summary::before { content: "▸ "; color: var(--lime); }
+.faq-item[open] summary::before { content: "▾ "; }
+.faq-item .ans { padding: 0 18px 14px; color: var(--text-dim); font-size: .93rem; }
+
+.quick-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.quick-chips button {
+  font-size: .76rem; padding: 4px 10px; border-radius: 999px; cursor: pointer; font-family: inherit;
+  background: rgba(139,123,255,.12); color: #c9c1ff; border: 1px solid rgba(139,123,255,.35);
+}
+.quick-chips button:hover { border-color: var(--purple); }

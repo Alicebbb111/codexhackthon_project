@@ -7,7 +7,7 @@
    TODO (AI): ชี้ AI_BASE ไปที่ server ที่รันโมเดล AI ที่เทรนไว้
    ============================================================ */
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = null; // TODO: เปลี่ยนเป็น URL ของ backend MySQL เช่น "http://localhost:3000/api"
 const AI_BASE = null;  // TODO: เปลี่ยนเป็น URL ของ AI service เช่น "http://localhost:8000"
 
 /** helper: เรียก API จริงถ้าตั้งค่าแล้ว ถ้ายังคืน mock ตามที่ส่งมา */
@@ -22,24 +22,9 @@ async function callApi(path, mockValue, options = {}) {
 }
 
 /** ดึงโปรไฟล์ผู้ใช้ / ผลสกิล จากฐานข้อมูล MySQL (ตาราง users, skill_scores) */
-function getUserProfile(userId = sessionStorage.getItem("sbUserId")) {
-  if (!userId) return Promise.resolve(window.MOCK_DATA.userProfile);
+function getUserProfile(userId = 1) {
   return callApi(`/users/${userId}`, window.MOCK_DATA.userProfile);
 }
-
-function registerUser(username, name, email, password, targetCareer = null) {
-  return callApi("/auth/register", null, { method: "POST", body: JSON.stringify({ username, name, email, password, target_career: targetCareer }) });
-}
-
-function saveDashboardResult(userId, result) {
-  const scores = result.categoryScores || {};
-  return callApi(`/dashboard/${userId}`, null, { method: "POST", body: JSON.stringify({ technical_score_avg: scores.technical, soft_score_avg: scores.soft, readiness_score_avg: result.careerReadiness, recommended_career: result.career, market_match_percentage: result.careerMatch }) });
-}
-
-function getDashboard(userId) { return callApi(`/dashboard/${userId}`, null); }
-function getDashboardSkills(userId) { return callApi(`/dashboard/${userId}/skills`, null); }
-function saveUserSkills(userId, skills) { return callApi(`/dashboard/${userId}/skills`, null, { method: "POST", body: JSON.stringify({ skills }) }); }
-function generateLearningPath(input) { return callApi("/ai/learning-path", null, { method: "POST", body: JSON.stringify(input) }); }
 
 /** บันทึกคะแนนแบบทดสอบลง MySQL (ตาราง assessments) */
 function saveAssessment(answers) {
@@ -77,4 +62,4 @@ async function aiChat(message) {
   return data.reply;
 }
 
-window.SkillBridgeAPI = { getUserProfile, registerUser, saveDashboardResult, getDashboard, getDashboardSkills, saveUserSkills, generateLearningPath, saveAssessment, aiPredict, aiChat };
+window.SkillBridgeAPI = { getUserProfile, saveAssessment, aiPredict, aiChat };
