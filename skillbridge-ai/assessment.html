@@ -240,11 +240,35 @@
       sessionStorage.setItem("sbResult", JSON.stringify(r));
 
       try {
-        // จุดเชื่อม MySQL — บันทึกคำตอบ (ตอนนี้ยังเป็น mock)
-        await window.SkillBridgeAPI.saveAssessment({ careerChoice, answers });
-        // จุดเชื่อม AI — ส่งผลให้โมเดลวิเคราะห์ต่อ (ตอนนี้ยังเป็น mock)
-        await window.SkillBridgeAPI.aiPredict({ careerChoice, answers });
-      } catch (e) { /* ยังไม่ต่อ backend — ข้ามไปได้ */ }
+        // ดึงข้อมูล User ที่ Login อยู่จาก localStorage
+        const currentUser = JSON.parse(localStorage.getItem('user'));
+        const userId = currentUser ? currentUser.id : 1; // ถ้ายังไม่ล็อกอิน ให้ใช้ ID 1 เป็นค่าเริ่มต้น
+
+        // 🔗 เชื่อมต่อจริง: ส่งข้อมูลบันทึกลง MySQL ผ่าน Backend API
+        const response = await fetch('http://localhost:5000/api/assessment/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                career_choice: careerChoice,
+                category_scores: r.categoryScores,
+                career_match: r.careerMatch,
+                answers: answers
+            })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            console.log("บันทึกผลควิสลง Database สำเร็จ:", data);
+        } else {
+            console.error("บันทึกไม่สำเร็จ:", data.error);
+        }
+
+      } catch (e) { 
+        console.error("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อบันทึกผลได้:", e); 
+      }
 
       addBubble("ไปดูพาสปอร์ตทักษะกันเลย!");
       setTimeout(() => (location.href = "passport.html"), 1600);
