@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>พาสปอร์ตทักษะ — SkillBridge AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <a class="logo" href="index.html">🛸 SkillBridge AI</a>
+    <nav>
+      <a href="index.html">หน้าแรก</a>
+      <a href="assessment.html">แบบทดสอบ</a>
+      <a href="passport.html">พาสปอร์ตทักษะ</a>
+      <a href="dashboard.html">แดชบอร์ด</a>
+      <a href="path.html">เส้นทางการเรียน</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-lime" href="assessment.html">ทำแบบทดสอบ</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="block">
+      <h2>🪪 พาสปอร์ตทักษะของเรา</h2>
+      <p class="sub">การ์ดนี้จะอัปเดตตามทักษะที่เราเรียนจริง ไม่ใช่แค่เรซูเม่ที่เขียนครั้งเดียว</p>
+
+      <div class="card glow" style="padding: 28px;">
+        <span class="tag">พาสปอร์ตนักบินอวกาศ</span>
+        <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; margin-bottom:22px;">
+          <span id="passportMascot" class="mascot-float"></span>
+          <div>
+            <div style="font-weight:800; font-size:1.2rem;" id="ownerName">นักสำรวจดวงใหม่</div>
+            <div style="color:var(--text-dim); font-size:.88rem;" id="issueDate"></div>
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <!-- ทักษะเทคนิค + ซอฟต์สกิล -->
+          <div>
+            <h3 style="margin-bottom:12px;">💻 ทักษะด้านเทคนิค</h3>
+            <div id="techSkills"></div>
+            <h3 style="margin:18px 0 12px;">🤝 ทักษะด้านคน</h3>
+            <div id="softSkills"></div>
+          </div>
+
+          <!-- ความพร้อมสู่อาชีพ -->
+          <div style="text-align:center;">
+            <h3 style="margin-bottom:14px;">🎯 ความพร้อมสู่อาชีพ</h3>
+            <div class="ring">
+              <svg width="150" height="150">
+                <circle cx="75" cy="75" r="64" stroke="rgba(255,255,255,.08)" stroke-width="12" fill="none"/>
+                <circle id="ringFill" cx="75" cy="75" r="64" stroke="#a6ff4d" stroke-width="12" fill="none"
+                        stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"
+                        style="filter: drop-shadow(0 0 8px rgba(166,255,77,.6)); transition: stroke-dashoffset 1.2s ease;"/>
+              </svg>
+              <div class="val" id="ringVal">0%</div>
+            </div>
+            <p style="color:var(--text-dim); font-size:.88rem; margin-top:10px;" id="jobMatch"></p>
+          </div>
+
+          <!-- อาชีพแนะนำ -->
+          <div>
+            <h3 style="margin-bottom:12px;">🚀 อาชีพที่แนะนำ</h3>
+            <div class="card" style="background:rgba(139,123,255,.12); border-color:rgba(139,123,255,.4);">
+              <div style="font-weight:700; font-size:1.1rem;" id="careerName"></div>
+              <p style="color:var(--text-dim); font-size:.9rem; margin:8px 0 12px;">ทักษะที่ยังขาด:</p>
+              <div id="missingSkills" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;"></div>
+              <a class="btn btn-lime" href="path.html">เรียนเลย</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- ควบคุมการมองเห็น -->
+        <div style="display:flex; gap:16px; align-items:center; margin-top:26px; flex-wrap:wrap; border-top:1px solid var(--line); padding-top:18px;">
+          <label style="display:flex; gap:8px; align-items:center; cursor:pointer;">
+            <input type="checkbox" id="publicToggle" style="width:18px; height:18px; accent-color:var(--lime);" />
+            <span>เปิดพาสปอร์ตแบบสาธารณะ</span>
+          </label>
+          <span style="color:var(--text-dim); font-size:.85rem;">เปิดเมื่อไหร่ นายจ้างและพี่เลี้ยงจะเห็นการ์ดนี้ได้</span>
+          <button class="btn btn-ghost" id="shareBtn">แชร์การ์ด</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/mockData.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    // ใช้ผลจากแบบทดสอบจริงถ้ามี (เก็บไว้ตอนจบควิซ) ไม่งั้นใช้ตัวอย่าง
+    // TODO: เปลี่ยนเป็นผลจาก AI จริง + ดึงจาก MySQL
+    const stored = sessionStorage.getItem("sbResult");
+    const result = stored ? JSON.parse(stored) : window.MOCK_DATA.aiResult;
+
+    // ถ้าเป็นผลจากควิซจริง แสดงคะแนนรายหมวดเป็น skill bar
+    if (stored && result.categoryScores) {
+      result.technical = [{ name: "💻 ทักษะเทคนิค", score: result.categoryScores.technical }];
+      result.soft = [
+        { name: "🤝 ทักษะด้านคน", score: result.categoryScores.soft },
+        { name: "🎯 ความพร้อมสู่อาชีพ", score: result.categoryScores.career },
+      ];
+    }
+
+    document.getElementById("passportMascot").innerHTML = mascotSVG(84);
+    document.getElementById("ownerName").textContent = window.MOCK_DATA.userProfile.name;
+    document.getElementById("issueDate").textContent =
+      "ออกให้วันที่ " + new Date().toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" });
+
+    function skillRows(el, list) {
+      el.innerHTML = list.map((s) => `
+        <div class="skill-row">
+          <div class="head"><span>${s.name}</span><span>${s.score}%</span></div>
+          <div class="bar"><span style="width:0%" data-w="${s.score}"></span></div>
+        </div>`).join("");
+    }
+    skillRows(document.getElementById("techSkills"), result.technical);
+    skillRows(document.getElementById("softSkills"), result.soft);
+
+    // วงกลมความพร้อม
+    const pct = result.careerReadiness;
+    setTimeout(() => {
+      document.getElementById("ringFill").style.strokeDashoffset = 402 - (402 * pct) / 100;
+      document.getElementById("ringVal").textContent = pct + "%";
+    }, 300);
+
+    document.getElementById("careerName").textContent = result.career;
+    document.getElementById("jobMatch").textContent =
+      (result.careerMatch != null ? `อาชีพนี้ตรงกับเรา ${result.careerMatch}% · ` : "") + result.jobMatch;
+    document.getElementById("missingSkills").innerHTML = result.missingSkills
+      .map((s) => `<span style="font-size:.82rem; padding:4px 12px; border-radius:999px; background:rgba(255,107,107,.12); color:#ff8f8f; border:1px solid rgba(255,107,107,.3);">${s}</span>`)
+      .join("");
+
+    // เลื่อน skill bar เข้าที่หลังโหลด
+    requestAnimationFrame(() => {
+      document.querySelectorAll(".bar > span").forEach((b) => (b.style.width = b.dataset.w + "%"));
+    });
+
+    document.getElementById("shareBtn").onclick = () => alert("ฟีเจอร์แชร์จะเปิดใช้หลังเชื่อมฐานข้อมูล 🛸");
+  </script>
+</body>
+</html>

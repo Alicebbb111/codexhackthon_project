@@ -1,0 +1,251 @@
+/* ============================================================
+   SkillBridge AI — ธีมอวกาศ / สไตล์ TryHackMe
+   ============================================================ */
+:root {
+  --bg-deep: #0b1026;
+  --bg-panel: #101736;
+  --bg-card: #151d42;
+  --line: #26305e;
+  --text: #e8ecff;
+  --text-dim: #9aa5cf;
+  --lime: #a6ff4d;
+  --lime-dark: #7fd41f;
+  --mint: #4de8b0;
+  --purple: #8b7bff;
+  --glow-lime: 0 0 14px rgba(166, 255, 77, .45);
+  --glow-purple: 0 0 18px rgba(139, 123, 255, .35);
+  --radius: 16px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Prompt", "Noto Sans Thai", "Sarabun", -apple-system, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(139,123,255,.15), transparent 60%),
+    radial-gradient(900px 500px at 10% 110%, rgba(77,232,176,.10), transparent 60%),
+    var(--bg-deep);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ดาวพื้นหลัง */
+.stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.stars i {
+  position: absolute; width: 2px; height: 2px; border-radius: 50%;
+  background: #fff; opacity: .7;
+  animation: twinkle 3s infinite ease-in-out;
+}
+@keyframes twinkle { 0%,100% { opacity:.15; } 50% { opacity:.85; } }
+
+main { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 24px 20px 80px; }
+
+/* ---------- Navbar (สไตล์ TryHackMe) ---------- */
+.navbar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 20px;
+  padding: 12px 24px;
+  background: rgba(11, 16, 38, .92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.navbar .logo {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 700; font-size: 1.15rem; color: var(--text); text-decoration: none;
+}
+.navbar nav { display: flex; gap: 6px; flex: 1; flex-wrap: wrap; }
+.navbar nav a {
+  color: var(--text-dim); text-decoration: none; padding: 8px 14px;
+  border-radius: 10px; font-size: .95rem;
+}
+.navbar nav a:hover { color: var(--text); background: rgba(255,255,255,.06); }
+.navbar nav a.active { color: var(--lime); }
+.nav-actions { display: flex; gap: 10px; }
+
+.btn {
+  display: inline-block; cursor: pointer; text-decoration: none; text-align: center;
+  border-radius: 10px; padding: 9px 18px; font-size: .95rem; font-weight: 600;
+  border: 1px solid transparent; font-family: inherit;
+  transition: transform .15s, box-shadow .15s;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn-lime {
+  background: var(--lime); color: #0b1026; font-weight: 700;
+  box-shadow: var(--glow-lime);
+}
+.btn-lime:hover { background: var(--lime-dark); }
+.btn-ghost { border-color: var(--line); color: var(--text); background: transparent; }
+.btn-ghost:hover { border-color: var(--text-dim); }
+.btn-purple {
+  background: linear-gradient(135deg, var(--purple), #6a5bff);
+  color: #fff; box-shadow: var(--glow-purple);
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  display: flex; align-items: center; gap: 32px; padding: 64px 0 32px;
+}
+.hero h1 { font-size: clamp(1.7rem, 4vw, 2.7rem); line-height: 1.3; }
+.hero h1 .hl { color: var(--lime); }
+.hero p { color: var(--text-dim); margin: 14px 0 22px; max-width: 520px; }
+.hero-mascot { flex: 0 0 auto; position: relative; text-align: center; }
+.mascot-float { animation: floaty 3.5s ease-in-out infinite; }
+@keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+
+.stats-row { display: flex; gap: 40px; flex-wrap: wrap; margin: 8px 0 40px; }
+.stat .num { font-size: 1.9rem; font-weight: 800; color: var(--lime); }
+.stat .lbl { color: var(--text-dim); font-size: .9rem; }
+
+/* ---------- Tabs ย่อยแบบ pill/underline ---------- */
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
+.tabs a {
+  padding: 10px 16px; color: var(--text-dim); text-decoration: none; font-size: .95rem;
+  border-bottom: 2px solid transparent;
+}
+.tabs a.active { color: var(--text); font-weight: 600; border-bottom-color: var(--lime); }
+
+/* ---------- การ์ด ---------- */
+.card {
+  background: var(--bg-card); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 20px;
+  position: relative;
+}
+.card.glow { box-shadow: var(--glow-purple); border-color: rgba(139,123,255,.4); }
+.card h3 { margin-bottom: 6px; }
+.card .desc { color: var(--text-dim); font-size: .92rem; }
+.tag {
+  position: absolute; top: 12px; right: 12px;
+  font-size: .72rem; padding: 3px 10px; border-radius: 999px;
+  background: rgba(166,255,77,.15); color: var(--lime); border: 1px solid rgba(166,255,77,.35);
+}
+.grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+
+.icon-badge {
+  width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center;
+  background: rgba(139,123,255,.15); margin-bottom: 12px;
+}
+
+section.block { margin: 48px 0; }
+section.block > h2 { font-size: 1.4rem; margin-bottom: 6px; }
+section.block > p.sub { color: var(--text-dim); margin-bottom: 18px; }
+
+/* ---------- Skill bar ---------- */
+.skill-row { margin-bottom: 14px; }
+.skill-row .head { display: flex; justify-content: space-between; font-size: .92rem; margin-bottom: 6px; }
+.bar { height: 10px; background: rgba(255,255,255,.07); border-radius: 999px; overflow: hidden; }
+.bar > span {
+  display: block; height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--mint), var(--lime));
+  box-shadow: var(--glow-lime);
+}
+
+/* ---------- วงกลมความพร้อม ---------- */
+.ring { position: relative; width: 150px; height: 150px; margin: 0 auto; }
+.ring svg { transform: rotate(-90deg); }
+.ring .val {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 1.7rem; font-weight: 800; color: var(--lime);
+}
+
+/* ---------- Chat / assessment ---------- */
+.chat-box { max-width: 640px; margin: 0 auto; }
+.bubble {
+  display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-start;
+}
+.bubble .msg {
+  background: var(--bg-card); border: 1px solid var(--line);
+  border-radius: 4px 16px 16px 16px; padding: 14px 18px;
+}
+.bubble.user { flex-direction: row-reverse; }
+.bubble.user .msg { background: rgba(139,123,255,.18); border-radius: 16px 4px 16px 16px; }
+.choices { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0 20px 62px; }
+.choice {
+  background: var(--bg-card); color: var(--text); border: 1px solid var(--line);
+  border-radius: 12px; padding: 10px 16px; cursor: pointer; font-family: inherit; font-size: .95rem;
+}
+.choice:hover { border-color: var(--lime); color: var(--lime); }
+.choice.selected { border-color: var(--lime); background: rgba(166,255,77,.1); color: var(--lime); }
+
+.progress-bridge { position: relative; max-width: 640px; margin: 0 auto 28px; }
+.progress-bridge .track {
+  height: 6px; border-radius: 999px;
+  background: repeating-linear-gradient(90deg, var(--line) 0 10px, transparent 10px 18px);
+}
+.progress-bridge .walker {
+  position: absolute; top: -26px; left: 0;
+  transition: left .5s ease;
+}
+
+/* ---------- เส้นทางการเรียนรู้ ---------- */
+.path-map { position: relative; padding-left: 8px; }
+.node-item { display: flex; gap: 18px; position: relative; padding-bottom: 34px; }
+.node-item::before {
+  content: ""; position: absolute; left: 27px; top: 56px; bottom: 0;
+  border-left: 2px dashed rgba(166,255,77,.4);
+}
+.node-item:last-child::before { display: none; }
+.node-dot {
+  flex: 0 0 56px; width: 56px; height: 56px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 1.4rem;
+  background: var(--bg-card); border: 2px solid var(--line); cursor: pointer;
+}
+.node-item.done .node-dot { border-color: var(--mint); color: var(--mint); box-shadow: 0 0 12px rgba(77,232,176,.4); }
+.node-item.current .node-dot { border-color: var(--lime); box-shadow: var(--glow-lime); animation: pulse 2s infinite; }
+.node-item.locked .node-dot { opacity: .35; cursor: default; }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 8px rgba(166,255,77,.4);} 50% { box-shadow: 0 0 22px rgba(166,255,77,.8);} }
+.node-info h4 { margin-bottom: 2px; }
+.node-info .desc { color: var(--text-dim); font-size: .9rem; }
+.node-state { font-size: .78rem; font-weight: 700; letter-spacing: .4px; }
+.node-item.done .node-state { color: var(--mint); }
+.node-item.current .node-state { color: var(--lime); }
+.node-item.locked .node-state { color: var(--text-dim); }
+
+/* ---------- มาสคอตลอยมุมล่างขวา ---------- */
+.mascot-fab {
+  position: fixed; right: 20px; bottom: 20px; z-index: 60;
+  width: 64px; height: 64px; border-radius: 50%;
+  background: rgba(16,23,54,.9); border: 1px solid var(--line);
+  display: grid; place-items: center; cursor: pointer;
+  box-shadow: var(--glow-lime);
+  animation: floaty 3.5s ease-in-out infinite;
+}
+.mascot-chat {
+  position: fixed; right: 20px; bottom: 96px; z-index: 60;
+  width: 280px; background: var(--bg-panel); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 16px; display: none;
+  box-shadow: 0 8px 40px rgba(0,0,0,.5);
+}
+.mascot-chat.open { display: block; }
+.mascot-chat .msg { font-size: .92rem; margin-bottom: 12px; }
+.mascot-chat input {
+  width: 100%; padding: 9px 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--bg-deep); color: var(--text);
+  font-family: inherit;
+}
+
+/* ---------- Dashboard ---------- */
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+.big-num { font-size: 2rem; font-weight: 800; color: var(--lime); }
+
+/* ---------- โหมดใจเย็น ---------- */
+body.calm { filter: saturate(.55) brightness(1.05); }
+body.calm .msg, body.calm .card, body.calm .choice { font-size: 1.08rem; }
+
+/* ---------- Footer ---------- */
+footer {
+  border-top: 1px solid var(--line); text-align: center;
+  color: var(--text-dim); font-size: .85rem; padding: 24px;
+  position: relative; z-index: 1;
+}
+
+/* ---------- มือถือ ---------- */
+@media (max-width: 720px) {
+  .hero { flex-direction: column; text-align: center; padding-top: 36px; }
+  .hero p { margin-inline: auto; }
+  .hero-mascot { order: -1; }
+  .navbar { flex-wrap: wrap; }
+  .navbar nav { order: 3; width: 100%; justify-content: center; }
+  .choices { margin-left: 0; }
+}
