@@ -93,7 +93,6 @@
 
     document.getElementById("dashMascot").innerHTML = mascotSVG(76);
     document.getElementById("nextLesson").textContent = d.nextLesson;
-    (async()=>{const id=sessionStorage.getItem("sbUserId"); if(!id)return; try{const x=await SkillBridgeAPI.getDashboard(id); const ready=Number(x.readiness_score_avg||0); document.getElementById("readyNum").textContent=ready+"%";}catch(e){}})();
 
     // นับเลขขึ้นแบบสวยๆ
     function countUp(el, target, suffix = "") {
