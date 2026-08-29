@@ -7,7 +7,7 @@
    TODO (AI): ชี้ AI_BASE ไปที่ server ที่รันโมเดล AI ที่เทรนไว้
    ============================================================ */
 
-const API_BASE = "http://localhost:3000/api";
+const API_BASE = "http://localhost:5000/api";
 const AI_BASE = null;  // TODO: เปลี่ยนเป็น URL ของ AI service เช่น "http://localhost:8000"
 
 /** helper: เรียก API จริงถ้าตั้งค่าแล้ว ถ้ายังคืน mock ตามที่ส่งมา */
