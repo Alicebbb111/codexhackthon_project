@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>แบบทดสอบ — SkillBridge AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <a class="logo" href="index.html">🛸 SkillBridge AI</a>
+    <nav>
+      <a href="index.html">หน้าแรก</a>
+      <a href="assessment.html">แบบทดสอบ</a>
+      <a href="passport.html">พาสปอร์ตทักษะ</a>
+      <a href="dashboard.html">แดชบอร์ด</a>
+      <a href="path.html">เส้นทางการเรียน</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" id="calmBtn" title="โหมดใจเย็น">🧘 โหมดใจเย็น</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- แถบความคืบหน้า: เอเลี่ยนเดินข้ามสะพาน -->
+    <div class="progress-bridge" id="bridge" style="visibility: hidden;">
+      <div class="walker" id="walker"></div>
+      <div class="track"></div>
+    </div>
+
+    <div class="chat-box" id="chatBox"></div>
+    <div class="choices" id="choicesBox"></div>
+  </main>
+
+  <script src="js/mockData.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const quiz = window.MOCK_DATA.quiz;
+    const answers = [];
+    let step = 0; // 0 = ทักทาย, 1 = โหมดการเรียนรู้, 2.. = quiz
+
+    const chatBox = document.getElementById("chatBox");
+    const choicesBox = document.getElementById("choicesBox");
+    const bridge = document.getElementById("bridge");
+    const walker = document.getElementById("walker");
+
+    function addBubble(text, isUser = false) {
+      chatBox.insertAdjacentHTML("beforeend", `
+        <div class="bubble ${isUser ? "user" : ""}">
+          ${isUser ? "" : `<span class="avatar">${mascotSVG(46)}</span>`}
+          <div class="msg">${text}</div>
+        </div>`);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function setChoices(items) {
+      choicesBox.innerHTML = "";
+      items.forEach((label, i) => {
+        const b = document.createElement("button");
+        b.className = "choice";
+        b.textContent = label;
+        b.onclick = () => pick(i, b);
+        choicesBox.appendChild(b);
+      });
+    }
+
+    function pick(i, btn) {
+      [...choicesBox.children].forEach((c) => (c.disabled = true));
+      btn.classList.add("selected");
+      addBubble(btn.textContent, true);
+      nextStep(i);
+    }
+
+    function moveWalker() {
+      const done = Math.max(0, answers.length);
+      walker.style.left = `calc(${(done / quiz.length) * 100}% - ${done === quiz.length ? 20 : 0}px)`;
+    }
+
+    function nextStep(answerIndex) {
+      // บันทึกคำตอบของ quiz
+      if (step >= 2) answers.push(answerIndex);
+      step++;
+
+      if (step === 1) {
+        addBubble("น่ารักมาก! แล้วช่วงนี้เราสนุกกับการเรียนแบบไหนเอ่ย? 😊");
+        setChoices(["ดูวิดีโอ 🎬", "ดูรูปภาพ/อินโฟกราฟิก 🖼️", "อ่านหนังสือ 📖", "เล่นเกม 🎮"]);
+      } else if (step >= 2 && step < 2 + quiz.length) {
+        bridge.style.visibility = "visible";
+        const qi = step - 2;
+        moveWalker();
+        addBubble(`ข้อที่ ${qi + 1}/${quiz.length} — ${quiz[qi].q}`);
+        setChoices(quiz[qi].choices);
+      } else {
+        moveWalker();
+        addBubble("เก่งมาก! กำลังสร้างพาสปอร์ตทักษะให้… 🛸✨");
+        choicesBox.innerHTML = "";
+        finish();
+      }
+    }
+
+    async function finish() {
+      try {
+        // จุดเชื่อม MySQL — บันทึกคำตอบ (ตอนนี้ยังเป็น mock)
+        await window.SkillBridgeAPI.saveAssessment({ answers });
+        // จุดเชื่อม AI — เรียกโมเดลประเมิน (ตอนนี้ยังเป็น mock)
+        await window.SkillBridgeAPI.aiPredict({ answers });
+      } catch (e) { /* ยังไม่ต่อ backend — ข้ามไปได้ */ }
+      setTimeout(() => (location.href = "passport.html"), 900);
+    }
+
+    // โหมดใจเย็น
+    document.getElementById("calmBtn").onclick = (e) => {
+      document.body.classList.toggle("calm");
+      e.target.textContent = document.body.classList.contains("calm") ? "🌙 กลับโหมดปกติ" : "🧘 โหมดใจเย็น";
+    };
+
+    // เริ่มบทสนทนา
+    addBubble("สวัสดี! เราคือบริดจ์ 🛸 พร้อมค้นหาความสามารถของตัวเองหรือยัง?");
+    setChoices(["พร้อมแล้ว! 🚀", "ขอเริ่มเบาๆ ก่อน 😌"]);
+  </script>
+</body>
+</html>

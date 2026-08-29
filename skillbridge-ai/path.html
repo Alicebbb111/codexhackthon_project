@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>เส้นทางการเรียน — SkillBridge AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <a class="logo" href="index.html">🛸 SkillBridge AI</a>
+    <nav>
+      <a href="index.html">หน้าแรก</a>
+      <a href="assessment.html">แบบทดสอบ</a>
+      <a href="passport.html">พาสปอร์ตทักษะ</a>
+      <a href="dashboard.html">แดชบอร์ด</a>
+      <a href="path.html">เส้นทางการเรียน</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-lime" href="dashboard.html">ภาพรวม</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="block">
+      <h2>🪐 แผนที่ดาว 8 สัปดาห์ สู่นักวิเคราะห์ธุรกิจ</h2>
+      <p class="sub">แต่ละดาวคือบทเรียนหนึ่งดวง — ยิ่งเดินทาง ยิ่งปลดล็อกดาวใหม่</p>
+
+      <div class="path-map" id="pathMap"></div>
+    </section>
+
+    <!-- panel รายละเอียดบทเรียน -->
+    <div class="mascot-chat" id="lessonPanel" style="right:50%; transform:translateX(50%); bottom:120px; width:340px;">
+      <h3 id="lessonTitle" style="margin-bottom:6px;"></h3>
+      <p class="desc" id="lessonDesc" style="margin-bottom:14px;"></p>
+      <button class="btn btn-lime" id="startLessonBtn" style="width:100%;">เริ่มเรียน</button>
+    </div>
+  </main>
+
+  <script src="js/mockData.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const path = window.MOCK_DATA.learningPath; // TODO: เปลี่ยนเป็นเส้นทางที่ AI แนะนำจริง
+    const icons = { done: "✔️", current: "🪐", locked: "🌑" };
+    const states = { done: "เรียนแล้ว", current: "กำลังเรียน", locked: "ยังไม่ปลดล็อก" };
+
+    const map = document.getElementById("pathMap");
+    map.innerHTML = path.map((n, i) => `
+      <div class="node-item ${n.state}">
+        <div class="node-dot" data-i="${i}" title="${n.title}">${icons[n.state]}</div>
+        <div class="node-info" style="padding-top:12px;">
+          <div class="node-state">${states[n.state]} · ใช้เวลา ~${n.hours} ชั่วโมง</div>
+          <h4>${i + 1}. ${n.title}</h4>
+          <p class="desc">${n.desc}</p>
+        </div>
+      </div>`).join("");
+
+    const panel = document.getElementById("lessonPanel");
+    map.addEventListener("click", (e) => {
+      const dot = e.target.closest(".node-dot");
+      if (!dot) return;
+      const n = path[+dot.dataset.i];
+      if (n.state === "locked") return;
+      document.getElementById("lessonTitle").textContent = n.title;
+      document.getElementById("lessonDesc").textContent = n.desc + ` (ประมาณ ${n.hours} ชั่วโมง)`;
+      panel.classList.add("open");
+    });
+
+    document.getElementById("startLessonBtn").onclick = () =>
+      alert("เนื้อหาบทเรียนจะเชื่อมกับระบบเรียนรู้หลังต่อฐานข้อมูล 🛸");
+  </script>
+</body>
+</html>
