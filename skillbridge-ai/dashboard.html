@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>แดชบอร์ด — SkillBridge AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <a class="logo" href="index.html">🛸 SkillBridge AI</a>
+    <nav>
+      <a href="index.html">หน้าแรก</a>
+      <a href="assessment.html">แบบทดสอบ</a>
+      <a href="passport.html">พาสปอร์ตทักษะ</a>
+      <a href="dashboard.html">แดชบอร์ด</a>
+      <a href="path.html">เส้นทางการเรียน</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-lime" href="path.html">ไปเรียนต่อ</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="block">
+      <h2>🌌 ภาพรวมการเดินทางของเรา</h2>
+      <p class="sub">ดูจบใน 5 วินาที — วันนี้เราควรทำอะไรต่อ</p>
+
+      <div class="dash-grid">
+        <div class="card" style="text-align:center;">
+          <div style="font-size:1.6rem;">🔥</div>
+          <div class="big-num" id="streakNum">0</div>
+          <div class="desc">วันติดที่เรียนต่อเนื่อง</div>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div style="font-size:1.6rem;">⭐</div>
+          <div class="big-num" id="pointsNum">0</div>
+          <div class="desc">แต้มสะสม</div>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div style="font-size:1.6rem;">🎯</div>
+          <div class="big-num" id="readyNum">0%</div>
+          <div class="desc">ความพร้อมสู่อาชีพ</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px; display:flex; gap:24px; flex-wrap:wrap;">
+        <div><div class="desc">อาชีพที่แนะนำ</div><strong id="recommendedCareer">—</strong></div>
+        <div><div class="desc">อาชีพเป้าหมาย</div><strong id="targetCareer">—</strong></div>
+        <div><div class="desc">ความตรงกับตลาด</div><strong id="marketMatch">—</strong></div>
+      </div>
+
+      <!-- ทักษะรวม -->
+      <div class="card" style="margin-top:16px;">
+        <h3 style="margin-bottom:16px;">📊 ทักษะของเราตอนนี้</h3>
+        <div id="allSkills"></div>
+      </div>
+
+      <!-- บทเรียนถัดไป -->
+      <div class="card glow" style="margin-top:16px; display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+        <span id="dashMascot" class="mascot-float"></span>
+        <div style="flex:1; min-width:220px;">
+          <div class="tag">บทเรียนถัดไปที่แนะนำ</div>
+          <h3 id="nextLesson" style="padding-right:70px;"></h3>
+          <p class="desc">ใช้เวลาประมาณ 30 นาทีวันนี้ก็เดินหน้าต่อได้แล้ว</p>
+        </div>
+        <a class="btn btn-lime" href="path.html">ไปเรียนต่อ</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/mockData.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const d = window.MOCK_DATA.dashboard;
+    const mockResult = window.MOCK_DATA.aiResult;
+
+    function countUp(el, target, suffix = "") {
+      let cur = 0;
+      const t = setInterval(() => {
+        cur += Math.ceil(target / 30);
+        if (cur >= target) { cur = target; clearInterval(t); }
+        el.textContent = cur + suffix;
+      }, 30);
+    }
+    function render(result) {
+      document.getElementById("dashMascot").innerHTML = mascotSVG(76);
+      document.getElementById("nextLesson").textContent = d.nextLesson;
+      countUp(document.getElementById("streakNum"), d.streak);
+      countUp(document.getElementById("pointsNum"), d.points);
+      countUp(document.getElementById("readyNum"), Number(result.careerReadiness || 0), "%");
+      document.getElementById("recommendedCareer").textContent = result.recommendedCareer || result.career || "—";
+      document.getElementById("targetCareer").textContent = result.targetCareer || "—";
+      document.getElementById("marketMatch").textContent = result.marketMatch == null ? "—" : `${result.marketMatch}%`;
+
+      const all = [...(result.technical || mockResult.technical), ...(result.soft || mockResult.soft)];
+      document.getElementById("allSkills").innerHTML = all.map((s) => `
+      <div class="skill-row">
+        <div class="head"><span>${s.name}</span><span>${s.score}%</span></div>
+        <div class="bar"><span style="width:0%" data-w="${s.score}"></span></div>
+      </div>`).join("");
+      requestAnimationFrame(() => document.querySelectorAll(".bar > span").forEach((b) => (b.style.width = b.dataset.w + "%")));
+    }
+
+    async function loadDashboard() {
+      const stored = sessionStorage.getItem("sbResult");
+      const fallback = stored ? JSON.parse(stored) : mockResult;
+      const fallbackView = { ...fallback, careerReadiness: fallback.careerReadiness, marketMatch: fallback.careerMatch, targetCareer: fallback.goalCareer };
+      const userId = sessionStorage.getItem("sbUserId");
+      if (!userId) return render(fallbackView);
+      try {
+        const data = await window.SkillBridgeAPI.getDashboard(userId);
+        if (!data) return render(fallbackView);
+        render({
+          ...fallbackView,
+          careerReadiness: Number(data.readiness_score_avg),
+          recommendedCareer: data.recommended_career,
+          targetCareer: data.target_career,
+          marketMatch: Number(data.market_match_percentage),
+        });
+      } catch (error) {
+        console.warn("Dashboard backend unavailable; using fallback data.", error);
+        render(fallbackView);
+      }
+    }
+    loadDashboard();
+  </script>
+</body>
+</html>

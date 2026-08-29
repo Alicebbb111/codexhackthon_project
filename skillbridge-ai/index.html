@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkillBridge AI — ค้นหาตัวเอง เชื่อมสู่งานที่ใช่</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <a class="logo" href="index.html">🛸 SkillBridge AI</a>
+    <nav>
+      <a href="index.html">หน้าแรก</a>
+      <a href="assessment.html">แบบทดสอบ</a>
+      <a href="passport.html">พาสปอร์ตทักษะ</a>
+      <a href="dashboard.html">แดชบอร์ด</a>
+      <a href="path.html">เส้นทางการเรียน</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-ghost" href="#">เข้าสู่ระบบ</a>
+      <a class="btn btn-lime" href="assessment.html">เริ่มฟรี</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div>
+        <h1>ค้นหาตัวเอง เรียนรู้ทักษะใหม่<br /><span class="hl">เชื่อมสู่งานที่ใช่</span></h1>
+        <p>ให้ AI คอยช่วยดูว่าเราเก่งอะไร ควรเรียนอะไรต่อ และงานแบบไหนที่เหมาะกับเรา — เริ่มได้เลย ฟรี ไม่ต้องสมัครก่อน</p>
+        <form id="registerForm" style="display:grid; gap:8px; max-width:360px; margin-top:16px;">
+          <input name="username" required maxlength="50" placeholder="ชื่อผู้ใช้" />
+          <input name="name" required placeholder="ชื่อ" />
+          <input name="email" type="email" required placeholder="อีเมล" />
+          <input name="password" type="password" required minlength="8" placeholder="รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)" />
+          <input name="targetCareer" placeholder="อาชีพเป้าหมาย (ถ้ามี)" />
+          <button class="btn btn-lime" type="submit">เริ่มทดสอบ 3 นาที ฟรี</button>
+          <small id="registerError" style="color:#ff9d9d;"></small>
+        </form>
+      </div>
+      <div class="hero-mascot mascot-float" id="heroMascot"><!-- มาสคอตใส่ด้วย JS --></div>
+    </section>
+
+    <!-- แถบสถิติ -->
+    <!-- TODO: เปลี่ยนตัวเลขเป็นข้อมูลจริงจาก UNICEF -->
+    <div class="stats-row" id="statsRow"></div>
+
+    <!-- แถบ tab ย่อยแบบ TryHackMe -->
+    <div class="tabs">
+      <a href="#how" class="active">วิธีใช้งาน</a>
+      <a href="passport.html">พาสปอร์ตทักษะ</a>
+      <a href="path.html">เส้นทางการเรียน</a>
+      <a href="dashboard.html">ความก้าวหน้า</a>
+    </div>
+
+    <!-- ทำอย่างไร -->
+    <section class="block" id="how">
+      <h2>เริ่มต้นง่ายๆ ใน 4 ขั้นตอน</h2>
+      <p class="sub">จากคนที่ยังไม่รู้ว่าตัวเองถนัดอะไร สู่คนที่มีงานที่ใช่</p>
+      <div class="grid-4" id="stepsGrid"></div>
+    </section>
+  </main>
+
+  <footer>SkillBridge AI — สร้างเพื่อเยาวชนทุกคนที่กำลังมองหาเส้นทางของตัวเอง 🛸</footer>
+
+  <script src="js/mockData.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    // มาสคอตหน้า hero
+    document.getElementById("heroMascot").innerHTML = mascotSVG(180);
+
+    // แถบสถิติ
+    document.getElementById("statsRow").innerHTML = window.MOCK_DATA.landingStats
+      .map((s) => `<div class="stat"><div class="num">${s.num}</div><div class="lbl">${s.label}</div></div>`)
+      .join("");
+
+    // การ์ด 4 ขั้นตอน
+    document.getElementById("stepsGrid").innerHTML = window.MOCK_DATA.steps
+      .map((s) => `
+        <div class="card">
+          <div class="icon-badge" style="font-size:1.6rem">${s.icon}</div>
+          <h3>${s.title}</h3>
+          <p class="desc">${s.desc}</p>
+        </div>`)
+      .join("");
+
+    document.getElementById("registerForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = new FormData(event.currentTarget);
+      const error = document.getElementById("registerError");
+      error.textContent = "";
+      try {
+        const { user } = await window.SkillBridgeAPI.registerUser(form.get("username"), form.get("name"), form.get("email"), form.get("password"), form.get("targetCareer") || null);
+        sessionStorage.setItem("sbUserId", String(user.id));
+        sessionStorage.setItem("sbUser", JSON.stringify(user));
+        location.href = "assessment.html";
+      } catch (e) { error.textContent = e.message || "ลงทะเบียนไม่สำเร็จ"; }
+    });
+  </script>
+</body>
+</html>
