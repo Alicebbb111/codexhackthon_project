@@ -122,6 +122,7 @@
 
     function onAnswer(index) {
       if (step === 0) {
+        choicesBox.innerHTML = ""; // ลบปุ่มคำตอบชุดเก่าทิ้ง
         addBubble(["พร้อมแล้ว! ไปกันเลย 🚀", "ขอเริ่มเบาๆ ก่อน 😌"][index], true);
         askCareer();
       } else if (step === 1) {
