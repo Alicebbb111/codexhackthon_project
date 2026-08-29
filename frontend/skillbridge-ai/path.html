@@ -43,12 +43,13 @@
   <script src="js/api.js"></script>
   <script src="js/main.js"></script>
   <script>
-    const path = window.MOCK_DATA.learningPath; // TODO: เปลี่ยนเป็นเส้นทางที่ AI แนะนำจริง
     const icons = { done: "✔️", current: "🪐", locked: "🌑" };
     const states = { done: "เรียนแล้ว", current: "กำลังเรียน", locked: "ยังไม่ปลดล็อก" };
-
     const map = document.getElementById("pathMap");
-    map.innerHTML = path.map((n, i) => `
+    let path = window.MOCK_DATA.learningPath;
+    function renderPath(items) {
+      path = items;
+      map.innerHTML = path.map((n, i) => `
       <div class="node-item ${n.state}">
         <div class="node-dot" data-i="${i}" title="${n.title}">${icons[n.state]}</div>
         <div class="node-info" style="padding-top:12px;">
@@ -57,6 +58,27 @@
           <p class="desc">${n.desc}</p>
         </div>
       </div>`).join("");
+    }
+    function aiPathToUi(data) {
+      return (data.learning_path || []).map((step, i) => ({ title: `${step.skill} — ${step.topic}`, desc: step.reason, state: i === 0 ? "current" : "locked", hours: 1 }));
+    }
+
+    async function loadPath() {
+      const cached = sessionStorage.getItem("sbLearningPath");
+      if (cached) { try { const parsed = JSON.parse(cached); if (parsed.learning_path) return renderPath(aiPathToUi(parsed)); } catch (e) { console.warn("Invalid cached learning path.", e); } }
+      const userId = sessionStorage.getItem("sbUserId");
+      if (!userId) return renderPath(path);
+      try {
+        const [dashboard, skillResponse] = await Promise.all([window.SkillBridgeAPI.getDashboard(userId), window.SkillBridgeAPI.getDashboardSkills(userId)]);
+        const rows = skillResponse && Array.isArray(skillResponse.skills) ? skillResponse.skills : [];
+        if (!rows.length) { console.info("Personalized path waiting for real user skill scores; using fallback path."); return renderPath(path); }
+        const current = Object.fromEntries(rows.map(s => [s.skill_name, Number(s.score)]));
+        const generated = await window.SkillBridgeAPI.generateLearningPath({ target_career: dashboard && dashboard.target_career || "Data Analyst", current_skills: current });
+        sessionStorage.setItem("sbLearningPath", JSON.stringify(generated));
+        renderPath(aiPathToUi(generated));
+      } catch (error) { console.warn("Personalized path unavailable; using fallback path.", error); renderPath(path); }
+    }
+    loadPath();
 
     const panel = document.getElementById("lessonPanel");
     map.addEventListener("click", (e) => {

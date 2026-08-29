@@ -24,12 +24,13 @@ window.MOCK_DATA = {
     { id: "unsure", name: "ยังไม่แน่ใจ อยากลองหลายอย่าง", icon: "🌌" },
   ],
 
-  // ควิซ 5 ข้อ วัด 3 หมวด: technical / soft / career
+  // ควิซ 8 ข้อ วัดทักษะที่มี skill metadata อย่างชัดเจน
   // - ข้อ technical มีเฉลย → ระบบบอกถูก/ผิด + คะแนนทันที (แยกบุคคล)
   // - ข้อ soft/career เป็นการประเมินตนเอง (ตัวเลือกแรก = คะแนนสูงสุด 100 ลดหลั่นลงมา)
   quiz: [
     {
       category: "technical",
+      skill_name: "Excel", skill_id: 1,
       label: "ทักษะเทคนิค",
       q: "ใน Excel ถ้าต้องการหาผลรวมของช่อง A1 ถึง A10 ต้องใช้สูตรไหน?",
       choices: ["=SUM(A1:A10)", "=TOTAL(A1-A10)", "=ADD(A1:A10)", "=SUM ALL(A1)"],
@@ -37,10 +38,29 @@ window.MOCK_DATA = {
     },
     {
       category: "technical",
+      skill_name: "SQL", skill_id: 2,
       label: "ทักษะเทคนิค",
       q: "SQL คืออะไร?",
       choices: ["ภาษาที่ใช้ดึงและจัดการข้อมูลในฐานข้อมูล", "โปรแกรมทำกราฟ", "ชื่อเว็บโซเชียลมีเดีย", "ซอฟต์แวร์ตัดต่อวิดีโอ"],
       correctIndex: 0,
+    },
+    {
+      category: "technical", skill_name: "Python", skill_id: 3,
+      label: "ทักษะเทคนิค",
+      q: "ใน Python ข้อใดใช้สร้างรายการ (list) ของตัวเลข?",
+      choices: ["[1, 2, 3]", "(1, 2, 3)", "{1, 2, 3}", "<1, 2, 3>"], correctIndex: 0,
+    },
+    {
+      category: "technical", skill_name: "Statistics", skill_id: 4,
+      label: "ทักษะเทคนิค",
+      q: "ค่าเฉลี่ย (mean) ของ 2, 4 และ 6 เท่ากับเท่าไร?",
+      choices: ["4", "3", "6", "12"], correctIndex: 0,
+    },
+    {
+      category: "technical", skill_name: "Data Visualization", skill_id: 5,
+      label: "ทักษะเทคนิค",
+      q: "กราฟชนิดใดเหมาะสำหรับแสดงแนวโน้มยอดขายตามเวลา?",
+      choices: ["กราฟเส้น", "กราฟวงกลม", "แผนภาพกระจาย", "แผนภูมิรูปภาพ"], correctIndex: 0,
     },
     {
       category: "technical",
@@ -56,6 +76,7 @@ window.MOCK_DATA = {
     },
     {
       category: "soft",
+      skill_name: "Teamwork", skill_id: 6,
       label: "ทักษะด้านคน",
       q: "เวลาทำงานกลุ่มแล้วเพื่อนไม่เห็นด้วยกับไอเดียเรา เรามัก…",
       choices: ["ฟังเหตุผลแล้วปรับไอเดียร่วมกัน", "ยืนยันของตัวเองจนจบ", "เงียบแล้วไม่แชร์อีก", "ปล่อยให้คนอื่นตัดสินใจแทนหมด"],

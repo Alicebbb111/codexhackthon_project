@@ -19,10 +19,26 @@
 })();
 
 /* SVG มาสคอตเอเลี่ยนเขียว (ใช้ชั่วคราว)
-   มาสคอตจริง: ใช้รูป assets/mascot.png (ครอปจากสติกเกอร์ชีต) */
+   TODO: เปลี่ยนเป็นไฟล์ภาพมาสคอตจริงตรงนี้ (เช่น <img src="assets/mascot.png">) */
 function mascotSVG(size = 72) {
-  return `<img src="assets/mascot.png" width="${size}" height="${size}"
-    style="border-radius:50%; object-fit:cover;" alt="มาสคอตเอเลี่ยน" />`;
+  return `
+  <svg width="${size}" height="${size}" viewBox="0 0 120 120" aria-label="มาสคอตเอเลี่ยน">
+    <!-- หนวด -->
+    <line x1="45" y1="28" x2="36" y2="10" stroke="#4de8b0" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="34" cy="8" r="5" fill="#a6ff4d"/>
+    <line x1="75" y1="28" x2="84" y2="10" stroke="#4de8b0" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="86" cy="8" r="5" fill="#a6ff4d"/>
+    <!-- ตัว -->
+    <ellipse cx="60" cy="72" rx="38" ry="40" fill="#5cc94f"/>
+    <ellipse cx="60" cy="86" rx="24" ry="20" fill="#7dd96a"/>
+    <!-- ตา -->
+    <ellipse cx="46" cy="62" rx="11" ry="14" fill="#0b1026"/>
+    <ellipse cx="74" cy="62" rx="11" ry="14" fill="#0b1026"/>
+    <circle cx="49" cy="58" r="3.4" fill="#fff"/>
+    <circle cx="77" cy="58" r="3.4" fill="#fff"/>
+    <!-- ยิ้ม -->
+    <path d="M52 88 Q60 96 68 88" stroke="#0b1026" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  </svg>`;
 }
 
 /* ปุ่มมาสคอตลอย + กล่องแชท (รอเชื่อม AI) */
